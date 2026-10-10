@@ -5,11 +5,11 @@ milestone_name: MVP
 current_phase: 1
 current_phase_name: Stage catalog & contracts
 current_plan: 2
-status: executing
+status: ready_for_verification
 stopped_at: Completed 01-02-PLAN.md
 last_updated: "2026-10-10T14:57:14.532Z"
 last_activity: 2026-10-10
-last_activity_desc: Roadmap created (MVP, 6 phases)
+last_activity_desc: Completed 01-02-PLAN.md
 state_head: 8a3659407cf6191d88162b926928dda9a12bfe3f
 progress:
   total_phases: 6
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-10-09)
 
 ## Current Position
 
-Phase: 1 (Stage catalog & contracts) — EXECUTING
-Current Plan: 2
+Phase: 1 (Stage catalog & contracts) — READY FOR VERIFICATION
+Current Plan: 2 of 2
 Total Plans in Phase: 2
-Status: Plan 01 complete; next is 01-02
-Last activity: 2026-10-10 — Completed 01-01-PLAN.md
+Status: All plans complete; ready for verification
+Last activity: 2026-10-10 — Completed 01-02-PLAN.md
 
 Progress: [█████░░░░░] 50%
 
@@ -41,19 +41,19 @@ Progress: [█████░░░░░] 50%
 
 **Velocity:**
 
-- Total plans completed: 1
-- Average duration: 3min
-- Total execution time: 0.05 hours
+- Total plans completed: 2
+- Average duration: 2.5min
+- Total execution time: 0.08 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-stage-catalog-contracts | 1 | 3min | 3min |
+| 01-stage-catalog-contracts | 2 | 5min | 2.5min |
 
 **Recent Trend:**
 
-- Last 5 plans: 3min
+- Last 5 plans: 3min, 2min
 - Trend: —
 
 *Updated after each plan completion*
