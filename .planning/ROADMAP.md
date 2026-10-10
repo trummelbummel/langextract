@@ -31,7 +31,7 @@ Build `scripts/trace_extract.py` — a one-call printed walkthrough of `lx.extra
   2. Each printed stage names an owning function and a repo-relative file path
   3. Diffs under this phase touch only `scripts/trace_extract.py` and repo-root `config.yaml` (and tests if any) — no edits under `langextract/` and no edits to `examples/ollama/demo_ollama.py`
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans executed
 
 Plans:
 **Wave 1**
@@ -40,7 +40,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-02-PLAN.md — empty_parse_message + redact_keys in config; redact() stub in script
+- [x] 01-02-PLAN.md — empty_parse_message + redact_keys in config; redact() stub in script
 
 ### Phase 2: Extraction snapshots
 
@@ -126,7 +126,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Stage catalog & contracts | 1/2 | In Progress|  |
+| 1. Stage catalog & contracts | 2/2 | In Progress|  |
 | 2. Extraction snapshots | 0/2 | Not started | - |
 | 3. Call-scoped probe manager | 0/TBD | Not started | - |
 | 4. Stage wrappers | 0/TBD | Not started | - |

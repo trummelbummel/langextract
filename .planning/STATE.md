@@ -4,17 +4,18 @@ milestone: v1.0
 milestone_name: MVP
 current_phase: 1
 current_phase_name: Stage catalog & contracts
+current_plan: 2
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-10-10T14:53:22.453Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-10-10T14:57:14.532Z"
 last_activity: 2026-10-10
 last_activity_desc: Roadmap created (MVP, 6 phases)
-state_head: 9a65bf8dc0c14106d0f3964c9c80d725a9ea997c
+state_head: 8a3659407cf6191d88162b926928dda9a12bfe3f
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 2
-  completed_plans: 1
+  total_plans: 4
+  completed_plans: 2
 ---
 
 # Project State
@@ -61,6 +62,7 @@ Progress: [█████░░░░░] 50%
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 01-stage-catalog-contracts P01 | 3min | 2 tasks | 2 files |
+| Phase 01-stage-catalog-contracts P02 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -76,6 +78,9 @@ Recent decisions affecting current work:
 - [Phase 1]: Call header prints full model_url plus host= netloc for D-09 clarity
 - [Phase 1]: load_config exposed for missing-path testing without deleting real config
 - [Phase 1]: Phase 1 config holds only model_id/model_url/provider (empty_parse/redact deferred to 01-02)
+- [Phase 1]: empty_parse_message uses PATTERNS wording; catalog path still omits it
+- [Phase 1]: redact() accepts explicit keys for tests; defaults to config redact_keys
+- [Phase 1]: Nested redact one level deep; non-matching values keep original types
 
 ### Pending Todos
 
@@ -96,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-10T14:53:22.442Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-10-10T14:57:14.520Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
