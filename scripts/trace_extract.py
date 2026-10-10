@@ -215,7 +215,29 @@ def print_grounding_pair(
   Extractions that align could not ground show ungrounded_label on the align
   line; the parse line keeps None (not yet grounded).
   """
-  pairs = list(zip(parse_snapshots, align_snapshots))
+  parse_list = list(parse_snapshots)
+  align_list = list(align_snapshots)
+  for item in (*parse_list, *align_list):
+    if not isinstance(item, ExtractionSnapshot):
+      raise TypeError(
+          'print_grounding_pair needs ExtractionSnapshot items, got '
+          f'{type(item).__name__}; live objects are never printed'
+      )
+  if len(parse_list) != len(align_list):
+    raise ValueError(
+        f'parse has {len(parse_list)} extractions but align has '
+        f'{len(align_list)}'
+    )
+  for i, (parse, align) in enumerate(zip(parse_list, align_list), start=1):
+    if (parse.extraction_class, parse.extraction_text) != (
+        align.extraction_class,
+        align.extraction_text,
+    ):
+      raise ValueError(
+          f'parse/align mismatch at position {i}: '
+          f'{parse.extraction_text!r} vs {align.extraction_text!r}'
+      )
+  pairs = list(zip(parse_list, align_list))
   print(f'grounding pair (parse → align): {len(pairs)} extractions')
   if not pairs:
     print('    parse: []')
