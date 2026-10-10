@@ -63,26 +63,26 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RUN-01 | — | Pending |
-| RUN-02 | — | Pending |
-| RUN-03 | — | Pending |
-| STG-01 | — | Pending |
-| STG-02 | — | Pending |
-| STG-03 | — | Pending |
-| STG-04 | — | Pending |
-| STG-05 | — | Pending |
-| STG-06 | — | Pending |
-| STG-07 | — | Pending |
-| STG-08 | — | Pending |
-| STG-09 | — | Pending |
-| CTR-01 | — | Pending |
-| CTR-02 | — | Pending |
+| RUN-01 | Phase 5 | Pending |
+| RUN-02 | Phase 5 | Pending |
+| RUN-03 | Phase 5 | Pending |
+| STG-01 | Phase 1 | Pending |
+| STG-02 | Phase 1 | Pending |
+| STG-03 | Phase 4 | Pending |
+| STG-04 | Phase 4 | Pending |
+| STG-05 | Phase 2 | Pending |
+| STG-06 | Phase 4 | Pending |
+| STG-07 | Phase 6 | Pending |
+| STG-08 | Phase 2 | Pending |
+| STG-09 | Phase 4 | Pending |
+| CTR-01 | Phase 1 | Pending |
+| CTR-02 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 14 total
-- Mapped to phases: 0
-- Unmapped: 14 ⚠️
+- Mapped to phases: 14
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-10-10*
-*Last updated: 2026-10-10 after initial definition*
+*Last updated: 2026-10-10 after roadmap creation*
