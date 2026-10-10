@@ -15,8 +15,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Stages
 
-- [ ] **STG-01**: Walkthrough prints stable stage labels in order: prompt-template, chunk, prompt, model, parse, align, annotated-document
-- [ ] **STG-02**: Each stage names the owning function and repo-relative file
+- [x] **STG-01**: Walkthrough prints stable stage labels in order: prompt-template, chunk, prompt, model, parse, align, annotated-document
+- [x] **STG-02**: Each stage names the owning function and repo-relative file
 - [ ] **STG-03**: Each stage prints live data in and data out for that call (full payloads for the short input)
 - [ ] **STG-04**: Model stage shows raw model text separate from parsed extractions
 - [ ] **STG-05**: Parse stage shows ungrounded extractions (`char_interval` / `alignment_status` still empty), including empty lists
@@ -27,8 +27,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Contract
 
-- [ ] **CTR-01**: Observation lives only in `scripts/trace_extract.py` — no library API changes and no reusable tracer
-- [ ] **CTR-02**: Script does not replace or modify `examples/ollama/demo_ollama.py`
+- [x] **CTR-01**: Observation lives only in `scripts/trace_extract.py` — no library API changes and no reusable tracer
+- [x] **CTR-02**: Script does not replace or modify `examples/ollama/demo_ollama.py`
 
 ## v2 Requirements
 
@@ -66,8 +66,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RUN-01 | Phase 5 | Pending |
 | RUN-02 | Phase 5 | Pending |
 | RUN-03 | Phase 5 | Pending |
-| STG-01 | Phase 1 | Pending |
-| STG-02 | Phase 1 | Pending |
+| STG-01 | Phase 1 | Complete |
+| STG-02 | Phase 1 | Complete |
 | STG-03 | Phase 4 | Pending |
 | STG-04 | Phase 4 | Pending |
 | STG-05 | Phase 2 | Pending |
@@ -75,10 +75,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STG-07 | Phase 6 | Pending |
 | STG-08 | Phase 2 | Pending |
 | STG-09 | Phase 4 | Pending |
-| CTR-01 | Phase 1 | Pending |
-| CTR-02 | Phase 1 | Pending |
+| CTR-01 | Phase 1 | Complete |
+| CTR-02 | Phase 1 | Complete |
 
 **Coverage:**
+
 - v1 requirements: 14 total
 - Mapped to phases: 14
 - Unmapped: 0 ✓
