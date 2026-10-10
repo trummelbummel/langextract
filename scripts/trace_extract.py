@@ -57,7 +57,8 @@ def load_config(path: Path) -> dict:
     SystemExit: with code 1 when path is missing or not a mapping.
   """
   if not path.exists():
-    print(f'Error: config file not found: {path}', file=sys.stderr)
+    expected = path.resolve()
+    print(f'Error: config file not found: {expected}', file=sys.stderr)
     raise SystemExit(1)
   with path.open('rt', encoding='utf-8') as f:
     data = yaml.safe_load(f)
