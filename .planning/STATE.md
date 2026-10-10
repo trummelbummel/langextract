@@ -40,19 +40,19 @@ Progress: [█████░░░░░] 50%
 
 **Velocity:**
 
-- Total plans completed: 0
-- Average duration: —
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: 3min
+- Total execution time: 0.05 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-stage-catalog-contracts | 1 | 3min | 3min |
 
 **Recent Trend:**
 
-- Last 5 plans: —
+- Last 5 plans: 3min
 - Trend: —
 
 *Updated after each plan completion*
