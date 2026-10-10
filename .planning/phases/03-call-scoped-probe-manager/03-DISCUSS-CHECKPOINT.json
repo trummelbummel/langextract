@@ -1,0 +1,25 @@
+{
+  "phase": "03",
+  "areas_completed": [
+    "Probe API shape"
+  ],
+  "areas_remaining": [
+    "Phase-3 wrap bodies",
+    "Prove restore",
+    "Install failure / re-entry"
+  ],
+  "current_area": "Phase-3 wrap bodies",
+  "decisions": {
+    "Probe API shape": {
+      "entry": "context manager",
+      "name": "trace_probes()",
+      "args": "optional wrappers={...}",
+      "default_when_omitted": "identity passthroughs for all five targets"
+    },
+    "Phase-3 wrap bodies": {
+      "default_behavior": "pure identity",
+      "generators": "transparent yield (never list())"
+    }
+  },
+  "questions_asked": 2
+}

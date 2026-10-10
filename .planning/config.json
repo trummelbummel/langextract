@@ -48,7 +48,8 @@
     "security_enforcement": true,
     "security_asvs_level": 1,
     "security_block_on": "high",
-    "_auto_chain_active": false
+    "_auto_chain_active": false,
+    "tdd_mode": true
   },
   "ship": {
     "pr_body_sections": [
@@ -82,7 +83,20 @@
   },
   "project_code": null,
   "phase_naming": "sequential",
-  "agent_skills": {},
+  "agent_skills": {
+    "gsd-planner": [
+      ".claude/skills/diff-budget"
+    ],
+    "gsd-plan-checker": [
+      ".claude/skills/diff-budget"
+    ],
+    "gsd-executor": [
+      ".claude/skills/diff-budget"
+    ],
+    "gsd-code-fixer": [
+      ".claude/skills/diff-budget"
+    ]
+  },
   "claude_md_path": "./.claude/CLAUDE.md",
   "plan_review": {
     "source_grounding": true,
