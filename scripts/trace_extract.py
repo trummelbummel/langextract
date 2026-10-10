@@ -191,27 +191,42 @@ def _format_interval(interval: tuple[int | None, int | None] | None) -> str:
   return f'[{interval[0]}, {interval[1]})'
 
 
-def _format_grounding(snap: ExtractionSnapshot) -> str:
-  return (
-      f'char_interval={_format_interval(snap.char_interval)} '
-      f'alignment_status={snap.alignment_status}'
-  )
+def _format_grounding(
+    snap: ExtractionSnapshot, none_label: str | None = None
+) -> str:
+  """Format grounding fields; none_label replaces None when given."""
+  interval = _format_interval(snap.char_interval)
+  status = snap.alignment_status
+  if none_label is not None:
+    if snap.char_interval is None:
+      interval = none_label
+    if status is None:
+      status = none_label
+  return f'char_interval={interval} alignment_status={status}'
 
 
 def print_grounding_pair(
     parse_snapshots: Iterable[ExtractionSnapshot],
     align_snapshots: Iterable[ExtractionSnapshot],
+    ungrounded_label: str,
 ) -> None:
-  """Print each extraction as a parse line followed by its align line."""
+  """Print each extraction as a parse line followed by its align line.
+
+  Extractions that align could not ground show ungrounded_label on the align
+  line; the parse line keeps None (not yet grounded).
+  """
   pairs = list(zip(parse_snapshots, align_snapshots))
   print(f'grounding pair (parse → align): {len(pairs)} extractions')
+  if not pairs:
+    print('    parse: []')
+    print('    align: []')
   for i, (parse, align) in enumerate(pairs, start=1):
     print(
         f'  [{i}] {parse.extraction_class}: {parse.extraction_text!r}'
         f'  index={parse.extraction_index}'
     )
     print(f'    parse: {_format_grounding(parse)}')
-    print(f'    align: {_format_grounding(align)}')
+    print(f'    align: {_format_grounding(align, ungrounded_label)}')
 
 
 def main() -> int:

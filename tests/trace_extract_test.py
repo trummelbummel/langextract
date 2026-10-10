@@ -90,7 +90,7 @@ class TraceExtractSnapshotTest(absltest.TestCase):
 
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
-      self.trace.print_grounding_pair(parse, align)
+      self.trace.print_grounding_pair(parse, align, "ungrounded")
     lines = buf.getvalue().splitlines()
 
     self.assertIn("grounding pair", lines[0])

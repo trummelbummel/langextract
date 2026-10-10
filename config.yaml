@@ -7,6 +7,9 @@ provider: OllamaLanguageModel
 empty_parse_message: >
   Chunk omitted on parse or schema error; raw model text is kept above.
 
+# Align-side marker for extractions Resolver.align could not ground
+ungrounded_label: ungrounded
+
 redact_keys:
   - api_key
   - apikey
