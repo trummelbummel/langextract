@@ -137,6 +137,65 @@ class TraceExtractSnapshotTest(absltest.TestCase):
     self.assertIn("[18, 26)", lines[grounded + 2])
     self.assertIn("match_exact", lines[grounded + 2])
 
+  def _snap(self, text, start=None, end=None, index=1, cls="symptom"):
+    char = None if start is None else (start, end)
+    return self.trace.ExtractionSnapshot(
+        extraction_class=cls,
+        extraction_text=text,
+        extraction_index=index,
+        group_index=None,
+        attributes=None,
+        char_interval=char,
+        token_interval=None,
+        alignment_status=None if char is None else "match_exact",
+    )
+
+  def test_duplicate_extractions_stay_separate_in_order(self):
+    parse = (self._snap("pain", index=1), self._snap("pain", index=2))
+    align = (
+        self._snap("pain", 0, 4, index=1),
+        self._snap("pain", 10, 14, index=2),
+    )
+    lines = self._print_pair(parse, align)
+    self.assertIn("2 extractions", lines[0])
+    first = next(i for i, ln in enumerate(lines) if "index=1" in ln)
+    second = next(i for i, ln in enumerate(lines) if "index=2" in ln)
+    self.assertIn("[1]", lines[first])
+    self.assertIn("[0, 4)", lines[first + 2])
+    self.assertIn("[2]", lines[second])
+    self.assertIn("[10, 14)", lines[second + 2])
+
+  def test_touching_spans_print_as_two_pairs(self):
+    parse = (self._snap("alpha", index=1), self._snap("beta", index=2))
+    align = (self._snap("alpha", 0, 5, index=1), self._snap("beta", 5, 9, 2))
+    lines = self._print_pair(parse, align)
+    self.assertIn("2 extractions", lines[0])
+    self.assertTrue(any("[0, 5)" in ln for ln in lines))
+    self.assertTrue(any("[5, 9)" in ln for ln in lines))
+
+  def test_count_mismatch_raises_before_printing(self):
+    parse = (self._snap("pain", index=1), self._snap("pain", index=2))
+    align = (self._snap("pain", 0, 4),)
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+      with self.assertRaisesRegex(ValueError, "2.*1"):
+        self.trace.print_grounding_pair(parse, align, "ungrounded")
+    self.assertEqual(buf.getvalue(), "")
+
+  def test_text_mismatch_names_position(self):
+    parse = (self._snap("pain", index=1), self._snap("pain", index=2))
+    align = (self._snap("pain", 0, 4), self._snap("ache", 10, 14))
+    with self.assertRaisesRegex(ValueError, "position 2"):
+      self._print_pair(parse, align)
+
+  def test_live_extraction_rejected_with_type_error(self):
+    live = [data.Extraction("symptom", "pain")]
+    align = (self._snap("pain", 0, 4),)
+    with self.assertRaises(TypeError):
+      self._print_pair(live, align)
+    with self.assertRaises(TypeError):
+      self._print_pair((self._snap("pain"),), live)
+
   def test_ungrounded_label_comes_from_config(self):
     config = self.trace.load_config(self.trace._CONFIG_PATH)
     self.assertEqual(config["ungrounded_label"], "ungrounded")
