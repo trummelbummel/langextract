@@ -92,7 +92,20 @@ Plans:
   3. Align-stage output shows spans, status, chunk offsets (even when 0), and source slice or `ungrounded`
   4. Empty parse is called out in words next to the raw model text, and parse inputs include format/fence/wrapper flags
 
-**Plans:** TBD
+**Plans:** 3 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 04-01-PLAN.md — Tracer: StageRecord + model wrapper + stage printer via offline lx.extract; chunk and prompt wrappers
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 04-02-PLAN.md — Parse wrapper with format/fence/wrapper flags; truthful empty-parse callout (empty_list_message)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 04-03-PLAN.md — Align wrapper with offsets/slices/ungrounded; five-stage walkthrough; trace_probes integration (needs Phase 3)
 
 ### Phase 5: Live extract & Ollama preflight
 
