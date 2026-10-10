@@ -103,6 +103,44 @@ class TraceExtractSnapshotTest(absltest.TestCase):
     self.assertIn("[18, 26)", align_line)
     self.assertIn("match_exact", align_line)
 
+  def _print_pair(self, parse, align):
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+      self.trace.print_grounding_pair(parse, align, "ungrounded")
+    return buf.getvalue().splitlines()
+
+  def test_empty_parse_prints_explicit_empty_lists(self):
+    empty = self.resolver.resolve("not json", suppress_parse_errors=True)
+    self.assertEqual(empty, [])
+    parse = self.trace.snapshot_extractions(empty)
+    align = self.trace.snapshot_extractions(
+        list(self.resolver.align([], _SOURCE_TEXT, 0, 0))
+    )
+    self.assertEqual((parse, align), ((), ()))
+
+    lines = self._print_pair(parse, align)
+    self.assertIn("grounding pair (parse → align): 0 extractions", lines[0])
+    self.assertTrue(any(ln.endswith("parse: []") for ln in lines))
+    self.assertTrue(any(ln.endswith("align: []") for ln in lines))
+
+  def test_unaligned_extraction_prints_ungrounded_label(self):
+    parse = self.trace.snapshot_extractions(self.resolved)
+    align = self.trace.snapshot_extractions(self._align())
+    lines = self._print_pair(parse, align)
+
+    idx = next(i for i, ln in enumerate(lines) if "purple elephant" in ln)
+    self.assertIn("char_interval=None alignment_status=None", lines[idx + 1])
+    self.assertIn(
+        "char_interval=ungrounded alignment_status=ungrounded", lines[idx + 2]
+    )
+    grounded = next(i for i, ln in enumerate(lines) if "'headache'" in ln)
+    self.assertIn("[18, 26)", lines[grounded + 2])
+    self.assertIn("match_exact", lines[grounded + 2])
+
+  def test_ungrounded_label_comes_from_config(self):
+    config = self.trace.load_config(self.trace._CONFIG_PATH)
+    self.assertEqual(config["ungrounded_label"], "ungrounded")
+
   def test_snapshot_independent_of_later_mutation(self):
     ext = data.Extraction(
         "med",
