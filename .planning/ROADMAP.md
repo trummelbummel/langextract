@@ -54,7 +54,16 @@ Plans:
   2. A later align snapshot of the same logical extractions shows grounding fields populated (or explicitly ungrounded) without overwriting the parse snapshot
   3. Printed output presents parse and align as a before/after grounding pair for those extractions
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — Tracer: snapshot at resolve + align, print the pair (real Resolver offline)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-02-PLAN.md — Empty lists, config `ungrounded` label, positional pairing guards
 
 ### Phase 3: Call-scoped probe manager
 
@@ -118,7 +127,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Stage catalog & contracts | 1/2 | In Progress|  |
-| 2. Extraction snapshots | 0/TBD | Not started | - |
+| 2. Extraction snapshots | 0/2 | Not started | - |
 | 3. Call-scoped probe manager | 0/TBD | Not started | - |
 | 4. Stage wrappers | 0/TBD | Not started | - |
 | 5. Live extract & Ollama preflight | 0/TBD | Not started | - |
