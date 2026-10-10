@@ -1,0 +1,9 @@
+{
+  "command": ".venv/bin/python tests/trace_extract_test.py",
+  "exitCode": 1,
+  "output": "TAP version 13\nnot ok 1 - test_parse_snapshot_survives_align_mutation\nnot ok 2 - test_print_grounding_pair_orders_parse_before_align\n# tests 2\n# pass 0\n# fail 2",
+  "targetTest": "test_parse_snapshot_survives_align_mutation",
+  "targetFile": "tests/trace_extract_test.py",
+  "expected": "snapshot_extractions exists; parse snapshot stays ungrounded after align mutation",
+  "actual": "AttributeError: module 'trace_extract' has no attribute 'snapshot_extractions'"
+}

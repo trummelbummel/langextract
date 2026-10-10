@@ -1,0 +1,9 @@
+{
+  "command": ".venv/bin/python tests/trace_extract_test.py",
+  "exitCode": 1,
+  "output": "TAP version 13\nok 1 - test_parse_snapshot_survives_align_mutation\nok 2 - test_print_grounding_pair_orders_parse_before_align\nnot ok 3 - test_snapshot_independent_of_later_mutation\n# tests 3\n# pass 2\n# fail 1",
+  "targetTest": "test_snapshot_independent_of_later_mutation",
+  "targetFile": "tests/trace_extract_test.py",
+  "expected": "snapshot attributes/intervals/status unaffected by later live mutation",
+  "actual": "AssertionError: {'dose': ['5mg', '10mg'], 'route': 'oral'} != {'dose': ['5mg']}"
+}
