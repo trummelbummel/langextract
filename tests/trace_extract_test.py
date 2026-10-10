@@ -22,6 +22,7 @@ import sys
 
 from absl.testing import absltest
 
+from langextract import data
 from langextract import resolver
 from langextract.providers import ollama
 
@@ -101,6 +102,40 @@ class TraceExtractSnapshotTest(absltest.TestCase):
     self.assertIn("align:", align_line)
     self.assertIn("[18, 26)", align_line)
     self.assertIn("match_exact", align_line)
+
+  def test_snapshot_independent_of_later_mutation(self):
+    ext = data.Extraction(
+        "med",
+        "aspirin",
+        attributes={"dose": ["5mg"]},
+        extraction_index=1,
+        group_index=0,
+    )
+    live_attrs = ext.attributes
+    live_dose = ext.attributes["dose"]
+    snap = self.trace.snapshot_extractions([ext])[0]
+
+    ext.attributes["dose"].append("10mg")
+    ext.attributes["route"] = "oral"
+    ext.char_interval = data.CharInterval(0, 7)
+    ext.alignment_status = data.AlignmentStatus.MATCH_FUZZY
+
+    self.assertEqual(snap.attributes, {"dose": ["5mg"]})
+    self.assertIsNone(snap.char_interval)
+    self.assertIsNone(snap.alignment_status)
+    self.assertIsNot(snap.attributes, live_attrs)
+    self.assertIsNot(snap.attributes["dose"], live_dose)
+    self.assertEqual(snap.group_index, 0)
+
+    bare = self.trace.snapshot_extractions([data.Extraction("a", "b")])[0]
+    self.assertIsNone(bare.attributes)
+
+    ext.char_interval = data.CharInterval(2, 5)
+    ext.alignment_status = data.AlignmentStatus.MATCH_EXACT
+    grounded = self.trace.snapshot_extractions([ext])[0]
+    self.assertEqual(grounded.char_interval, (2, 5))
+    self.assertIsInstance(grounded.char_interval, tuple)
+    self.assertIsInstance(grounded.alignment_status, str)
 
 
 if __name__ == "__main__":
