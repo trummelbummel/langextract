@@ -2,3 +2,17 @@
 model_id: gemma3:4b
 model_url: http://localhost:11434
 provider: OllamaLanguageModel
+
+# Stored for later phases; not printed in Phase 1
+empty_parse_message: >
+  Chunk omitted on parse or schema error; raw model text is kept above.
+
+redact_keys:
+  - api_key
+  - apikey
+  - token
+  - secret
+  - password
+  - authorization
+  - bearer
+  - jwt
