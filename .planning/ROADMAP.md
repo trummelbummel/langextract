@@ -11,7 +11,7 @@ Build `scripts/trace_extract.py` — a one-call printed walkthrough of `lx.extra
 ## Phases
 
 - [x] **Phase 1: Stage catalog & contracts** - Script skeleton with stable stage labels, owners, and script-only boundaries (completed 2026-10-10)
-- [ ] **Phase 2: Extraction snapshots** - Field copies that keep parse (ungrounded) distinct from align (grounded)
+- [x] **Phase 2: Extraction snapshots** - Field copies that keep parse (ungrounded) distinct from align (grounded) (completed 2026-10-10)
 - [ ] **Phase 3: Call-scoped probe manager** - Install and restore five class wraps in `finally` before any live call
 - [ ] **Phase 4: Stage wrappers** - Capture chunk → prompt → infer → resolve → align with live in/out records
 - [ ] **Phase 5: Live extract & Ollama preflight** - One `lx.extract()` against `gemma3:4b` with clear preflight failure
@@ -54,7 +54,7 @@ Plans:
   2. A later align snapshot of the same logical extractions shows grounding fields populated (or explicitly ungrounded) without overwriting the parse snapshot
   3. Printed output presents parse and align as a before/after grounding pair for those extractions
 
-**Plans:** 2/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 **Wave 1**
@@ -127,7 +127,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Stage catalog & contracts | 2/2 | Complete    | 2026-10-10 |
-| 2. Extraction snapshots | 2/2 | In Progress|  |
+| 2. Extraction snapshots | 2/2 | Complete    | 2026-10-10 |
 | 3. Call-scoped probe manager | 0/TBD | Not started | - |
 | 4. Stage wrappers | 0/TBD | Not started | - |
 | 5. Live extract & Ollama preflight | 0/TBD | Not started | - |

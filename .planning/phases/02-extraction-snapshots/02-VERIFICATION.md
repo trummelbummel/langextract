@@ -13,7 +13,7 @@ covered_files:
   - config.yaml
   - scripts/trace_extract.py
   - tests/trace_extract_test.py
-covered_digest: "v1:sha256:60334ae96d0cd3850b5fb6487ff1facbe5d0d59cdbaa316c8b25134bb58b2780"
+covered_digest: "v1:sha256:c150cef2d564a38ce72604e560716f674043a983f6ebc35759182c2ccba4d148"
 behavior_unverified: 0
 overrides_applied: 0
 ---
