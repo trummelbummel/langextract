@@ -4,19 +4,18 @@ milestone: v1.0
 milestone_name: MVP
 current_phase: 02
 current_phase_name: Extraction snapshots
-current_plan: Not started
-status: planning
-stopped_at: Phase 1 complete, ready to plan Phase 02
-last_updated: "2026-10-10T15:01:32.906Z"
+current_plan: 2
+status: executing
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-10-10T15:05:50.632Z"
 last_activity: 2026-10-10
-last_activity_desc: Phase 1 complete, transitioned to Phase 02
-state_head: bb12f77c4569539ac03c153dc70d11156f53a822
+last_activity_desc: Phase 02 execution started
+state_head: dda0ced9b8837d30cdee7da53c21213195fde732
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 4
-  completed_plans: 2
-  percent: 17
+  completed_plans: 3
 ---
 
 # Project State
@@ -30,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-10-09)
 
 ## Current Position
 
-Phase: 02 — Extraction snapshots
-Current Plan: Not started
+Phase: 02 (Extraction snapshots) — EXECUTING
+Current Plan: 2
 Total Plans in Phase: 2
-Status: Ready to plan
-Last activity: 2026-10-10 — Phase 1 complete, transitioned to Phase 02
+Status: Ready to execute
+Last activity: 2026-10-10 — Phase 02 execution started
 
 Progress: [██░░░░░░░░] 17%
 
@@ -65,6 +64,7 @@ Progress: [██░░░░░░░░] 17%
 |------|----------|-------|-------|
 | Phase 01-stage-catalog-contracts P01 | 3min | 2 tasks | 2 files |
 | Phase 01-stage-catalog-contracts P02 | 2min | 2 tasks | 2 files |
+| Phase 02 P01 | 9 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -83,6 +83,7 @@ Recent decisions affecting current work:
 - [Phase 1]: empty_parse_message uses PATTERNS wording; catalog path still omits it
 - [Phase 1]: redact() accepts explicit keys for tests; defaults to config redact_keys
 - [Phase 1]: Nested redact one level deep; non-matching values keep original types
+- [Phase 02]: Snapshots are duck-typed field copies (attributes copied one level deep, no deepcopy); helpers not wired into main() until Phase 4 — Resolver.align mutates resolve's objects in place; parse record must be copied at resolve return
 
 ### Pending Todos
 
@@ -103,6 +104,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-10T14:57:14.520Z
-Stopped at: Phase 1 complete, ready to plan Phase 02
+Last session: 2026-10-10T15:05:50.618Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None
