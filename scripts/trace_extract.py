@@ -21,14 +21,17 @@ Usage:
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 import sys
+from typing import Any
 from urllib.parse import urlparse
 
 import yaml
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _CONFIG_PATH = _REPO_ROOT / 'config.yaml'
+_REDACTION_TOKEN = '<REDACTED>'
 
 # (label, function_name, repo_relative_path)
 STAGE_CATALOG: list[tuple[str, str, str]] = [
@@ -66,6 +69,42 @@ def load_config(path: Path) -> dict:
     print(f'Error: {path} must contain a YAML mapping', file=sys.stderr)
     raise SystemExit(1)
   return data
+
+
+def redact(
+    mapping: Mapping[str, Any],
+    keys: Iterable[str] | None = None,
+) -> dict[str, Any]:
+  """Return a copy of mapping with sensitive key values replaced.
+
+  Matching is case-insensitive on key names. Nested mappings are redacted
+  at least one level deep. When keys is None, loads redact_keys from config.
+  """
+  if keys is None:
+    keys = load_config(_CONFIG_PATH)['redact_keys']
+  key_set = {k.lower() for k in keys}
+
+  def _redact_one(value: Any) -> Any:
+    if isinstance(value, Mapping):
+      return {
+          k: (
+              _REDACTION_TOKEN
+              if isinstance(k, str) and k.lower() in key_set
+              else v
+          )
+          for k, v in value.items()
+      }
+    return value
+
+  out: dict[str, Any] = {}
+  for k, v in mapping.items():
+    if isinstance(k, str) and k.lower() in key_set:
+      out[k] = _REDACTION_TOKEN
+    elif isinstance(v, Mapping):
+      out[k] = _redact_one(v)
+    else:
+      out[k] = v
+  return out
 
 
 def _host_from_model_url(model_url: str) -> str:
