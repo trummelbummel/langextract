@@ -22,6 +22,7 @@ Usage:
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+import dataclasses
 from pathlib import Path
 import sys
 from typing import Any
@@ -133,6 +134,75 @@ def print_stage_catalog() -> None:
     print(f'[{label}] {function_name} — {path}')
     if label == 'align':
       print('helper: WordAligner.align_extractions')
+
+
+@dataclasses.dataclass(frozen=True)
+class ExtractionSnapshot:
+  """Field copies of one Extraction, taken at a single pipeline stage."""
+
+  extraction_class: str
+  extraction_text: str
+  extraction_index: int | None
+  group_index: int | None
+  attributes: dict | None
+  char_interval: tuple[int | None, int | None] | None
+  token_interval: tuple[int, int] | None
+  alignment_status: str | None
+
+
+def _snapshot_extraction(extraction: Any) -> ExtractionSnapshot:
+  """Copy the traced fields of extraction by duck typing."""
+  char = extraction.char_interval
+  token = extraction.token_interval
+  status = extraction.alignment_status
+  return ExtractionSnapshot(
+      extraction_class=extraction.extraction_class,
+      extraction_text=extraction.extraction_text,
+      extraction_index=extraction.extraction_index,
+      group_index=extraction.group_index,
+      attributes=extraction.attributes,
+      char_interval=None if char is None else (char.start_pos, char.end_pos),
+      token_interval=(
+          None if token is None else (token.start_index, token.end_index)
+      ),
+      alignment_status=None if status is None else status.value,
+  )
+
+
+def snapshot_extractions(
+    extractions: Iterable[Any],
+) -> tuple[ExtractionSnapshot, ...]:
+  """Snapshot extractions in order, before later stages mutate them."""
+  return tuple(_snapshot_extraction(e) for e in extractions)
+
+
+def _format_interval(interval: tuple[int | None, int | None] | None) -> str:
+  if interval is None:
+    return 'None'
+  return f'[{interval[0]}, {interval[1]})'
+
+
+def _format_grounding(snap: ExtractionSnapshot) -> str:
+  return (
+      f'char_interval={_format_interval(snap.char_interval)} '
+      f'alignment_status={snap.alignment_status}'
+  )
+
+
+def print_grounding_pair(
+    parse_snapshots: Iterable[ExtractionSnapshot],
+    align_snapshots: Iterable[ExtractionSnapshot],
+) -> None:
+  """Print each extraction as a parse line followed by its align line."""
+  pairs = list(zip(parse_snapshots, align_snapshots))
+  print(f'grounding pair (parse → align): {len(pairs)} extractions')
+  for i, (parse, align) in enumerate(pairs, start=1):
+    print(
+        f'  [{i}] {parse.extraction_class}: {parse.extraction_text!r}'
+        f'  index={parse.extraction_index}'
+    )
+    print(f'    parse: {_format_grounding(parse)}')
+    print(f'    align: {_format_grounding(align)}')
 
 
 def main() -> int:

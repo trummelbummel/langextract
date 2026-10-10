@@ -18,6 +18,7 @@ import contextlib
 import importlib.util
 import io
 import pathlib
+import sys
 
 from absl.testing import absltest
 
@@ -39,6 +40,8 @@ def _load_script_module():
   """Loads scripts/trace_extract.py as a module."""
   spec = importlib.util.spec_from_file_location("trace_extract", _SCRIPT_PATH)
   module = importlib.util.module_from_spec(spec)
+  # dataclasses resolves string annotations through sys.modules.
+  sys.modules[spec.name] = module
   spec.loader.exec_module(module)
   return module
 
