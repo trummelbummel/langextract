@@ -1,0 +1,9 @@
+{
+  "command": ".venv/bin/python tests/trace_extract_test.py",
+  "exitCode": 1,
+  "output": "TAP version 13\nok 1 - test_parse_snapshot_survives_align_mutation\nok 2 - test_print_grounding_pair_orders_parse_before_align\nnot ok 3 - test_empty_parse_prints_explicit_empty_lists\nnot ok 4 - test_unaligned_extraction_prints_ungrounded_label\nnot ok 5 - test_ungrounded_label_comes_from_config\nok 6 - test_snapshot_independent_of_later_mutation\n# tests 6\n# pass 3\n# fail 3",
+  "targetTest": "test_empty_parse_prints_explicit_empty_lists",
+  "targetFile": "tests/trace_extract_test.py",
+  "expected": "empty parse prints 0 extractions with explicit parse: [] and align: [] lines",
+  "actual": "TypeError: print_grounding_pair() takes 2 positional arguments but 3 were given; KeyError: 'ungrounded_label'"
+}

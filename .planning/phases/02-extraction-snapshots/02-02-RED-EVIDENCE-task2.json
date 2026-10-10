@@ -1,0 +1,9 @@
+{
+  "command": ".venv/bin/python tests/trace_extract_test.py",
+  "exitCode": 1,
+  "output": "TAP version 13\nok 1 - test_duplicate_extractions_stay_separate_in_order\nnot ok 2 - test_count_mismatch_raises_before_printing\nok 3 - test_empty_parse_prints_explicit_empty_lists\nnot ok 4 - test_live_extraction_rejected_with_type_error\nok 5 - test_parse_snapshot_survives_align_mutation\nok 6 - test_print_grounding_pair_orders_parse_before_align\nok 7 - test_snapshot_independent_of_later_mutation\nnot ok 8 - test_text_mismatch_names_position\nok 9 - test_touching_spans_print_as_two_pairs\nok 10 - test_unaligned_extraction_prints_ungrounded_label\nok 11 - test_ungrounded_label_comes_from_config\n# tests 11\n# pass 8\n# fail 3",
+  "targetTest": "test_count_mismatch_raises_before_printing",
+  "targetFile": "tests/trace_extract_test.py",
+  "expected": "count mismatch, text mismatch and live Extraction input raise before any output",
+  "actual": "AssertionError: ValueError not raised; AssertionError: TypeError not raised"
+}
