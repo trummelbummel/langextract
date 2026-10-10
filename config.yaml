@@ -1,0 +1,4 @@
+# Call constants for scripts/trace_extract.py (Phase 1)
+model_id: gemma3:4b
+model_url: http://localhost:11434
+provider: OllamaLanguageModel
