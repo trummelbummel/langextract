@@ -26,7 +26,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-09)
 
 **Core value:** You can follow one `lx.extract()` call from the prompt through to an `AnnotatedDocument` and see which function owns each stage.
-**Current focus:** Phase 1 — Stage catalog & contracts
+**Current focus:** Phase 02 — Extraction snapshots
 
 ## Current Position
 

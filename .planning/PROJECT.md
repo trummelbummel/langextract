@@ -19,12 +19,13 @@ You can follow one `lx.extract()` call from the prompt through to an `AnnotatedD
 - ✓ Model text is parsed into `Extraction` objects — existing (`langextract/resolver.py`, `langextract/core/format_handler.py`)
 - ✓ Extractions are aligned back to character spans in the source — existing (`Resolver.align` / `WordAligner` in `langextract/resolver.py`)
 - ✓ The public result is an `AnnotatedDocument` — existing (`langextract/core/data.py`)
+- ✓ Stage catalog prints ordered labels plus owning function/file and a static call header from `config.yaml` — Phase 1 (`scripts/trace_extract.py`, repo-root `config.yaml`)
 
 ### Active
 
 - [ ] A small script runs one `lx.extract()` call using local Ollama `gemma3:4b`
-- [ ] The script prints a walkthrough of prompting, chunking, the model call, parsing, alignment (source grounding), and `AnnotatedDocument`
-- [ ] Each stage in that walkthrough names the owning function and file, and shows the data going in and out
+- [ ] The script prints a walkthrough of prompting, chunking, the model call, parsing, alignment (source grounding), and `AnnotatedDocument` (live data in/out — Phases 2–6)
+- [ ] Each stage shows the data going in and out (owners/files already printed in Phase 1)
 
 ### Out of Scope
 
@@ -52,10 +53,11 @@ The codebase map in `.planning/codebase/` (refreshed 2026-10-09) is the referenc
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Script first, then later LangExtract changes | Feature requests tend to touch one stage; the trace shows which stage before any library edit | — Pending |
-| Printed stage dump, not a result-only demo and not a reusable tracer | Each stage must show owning function, file, and data in/out for a single call | — Pending |
+| Script first, then later LangExtract changes | Feature requests tend to touch one stage; the trace shows which stage before any library edit | Confirmed — Phase 1 touches only `scripts/` + `config.yaml` |
+| Printed stage dump, not a result-only demo and not a reusable tracer | Each stage must show owning function, file, and data in/out for a single call | Phase 1: owners/files + call header; live payloads deferred |
 | First milestone is only the script | Later library changes wait until one is named | — Pending |
-| Local Ollama `gemma3:4b` | The model is already available locally; the existing Ollama demo targets a different model and a different output | — Pending |
+| Local Ollama `gemma3:4b` | The model is already available locally; the existing Ollama demo targets a different model and a different output | Configured in `config.yaml` (Phase 1); live call in later phase |
+| Repo-root `config.yaml` for call constants / empty-parse / redact keys | Keeps script knobs out of the library and demo | Shipped Phase 1 |
 
 ## Evolution
 
@@ -75,4 +77,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-09 after initialization*
+*Last updated: 2026-10-10 after Phase 1*
