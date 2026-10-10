@@ -10,7 +10,7 @@ Build `scripts/trace_extract.py` — a one-call printed walkthrough of `lx.extra
 
 ## Phases
 
-- [ ] **Phase 1: Stage catalog & contracts** - Script skeleton with stable stage labels, owners, and script-only boundaries
+- [x] **Phase 1: Stage catalog & contracts** - Script skeleton with stable stage labels, owners, and script-only boundaries (completed 2026-10-10)
 - [ ] **Phase 2: Extraction snapshots** - Field copies that keep parse (ungrounded) distinct from align (grounded)
 - [ ] **Phase 3: Call-scoped probe manager** - Install and restore five class wraps in `finally` before any live call
 - [ ] **Phase 4: Stage wrappers** - Capture chunk → prompt → infer → resolve → align with live in/out records
@@ -31,7 +31,7 @@ Build `scripts/trace_extract.py` — a one-call printed walkthrough of `lx.extra
   2. Each printed stage names an owning function and a repo-relative file path
   3. Diffs under this phase touch only `scripts/trace_extract.py` and repo-root `config.yaml` (and tests if any) — no edits under `langextract/` and no edits to `examples/ollama/demo_ollama.py`
 
-**Plans:** 2/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 **Wave 1**
@@ -126,7 +126,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Stage catalog & contracts | 2/2 | In Progress|  |
+| 1. Stage catalog & contracts | 2/2 | Complete    | 2026-10-10 |
 | 2. Extraction snapshots | 0/2 | Not started | - |
 | 3. Call-scoped probe manager | 0/TBD | Not started | - |
 | 4. Stage wrappers | 0/TBD | Not started | - |
