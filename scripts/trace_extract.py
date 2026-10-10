@@ -150,6 +150,15 @@ class ExtractionSnapshot:
   alignment_status: str | None
 
 
+def _copy_attributes(attributes: Mapping[str, Any] | None) -> dict | None:
+  """Copy attributes one level deep so list values are not aliased."""
+  if attributes is None:
+    return None
+  return {
+      k: list(v) if isinstance(v, list) else v for k, v in attributes.items()
+  }
+
+
 def _snapshot_extraction(extraction: Any) -> ExtractionSnapshot:
   """Copy the traced fields of extraction by duck typing."""
   char = extraction.char_interval
@@ -160,7 +169,7 @@ def _snapshot_extraction(extraction: Any) -> ExtractionSnapshot:
       extraction_text=extraction.extraction_text,
       extraction_index=extraction.extraction_index,
       group_index=extraction.group_index,
-      attributes=extraction.attributes,
+      attributes=_copy_attributes(extraction.attributes),
       char_interval=None if char is None else (char.start_pos, char.end_pos),
       token_interval=(
           None if token is None else (token.start_index, token.end_index)
