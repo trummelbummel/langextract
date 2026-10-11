@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: MVP
 current_phase: 05
 current_phase_name: Live extract & Ollama preflight
-current_plan: 2
-status: verifying
-stopped_at: Completed 05-02-PLAN.md
-last_updated: "2026-10-11T07:23:52.547Z"
+current_plan: 1
+status: executing
+stopped_at: Completed 261011-d60-PLAN.md
+last_updated: "2026-10-11T07:32:14.252Z"
 last_activity: 2026-10-11
 last_activity_desc: Phase 05 execution started
-state_head: f009ae397858123b22faae359c644fe1722feaeb
+state_head: 98b65875b63e90e7cf03a088d5437171b01f100a
 progress:
   total_phases: 6
   completed_phases: 4
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-10-11)
 ## Current Position
 
 Phase: 05 (Live extract & Ollama preflight) — EXECUTING
-Current Plan: 2
+Current Plan: 1
 Total Plans in Phase: 2
-Status: Phase complete — ready for verification
-Last activity: 2026-10-11 - Completed quick task 261011-cst: make the script read from config the file in filepath data/example_document.md , make the chunking configurable in the config and load it in the script
+Status: Executing Phase 05
+Last activity: 2026-10-11 - Completed quick task 261011-d60: chunk walkthrough markers (########## / ******* / %%%%%%)
 
 Progress: [███████░░░] 67%
 
@@ -77,6 +77,7 @@ Progress: [███████░░░] 67%
 | Phase 05 P01 | 25 min | 2 tasks | 3 files |
 | Phase 261011-cst P01 | 2min | 2 tasks | 4 files |
 | Phase 05 P02 | 4min | 2 tasks | 4 files |
+| Phase 261011-d60 P01 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,7 @@ Recent decisions affecting current work:
 - [Phase 05]: Quick 261011-cst: document_path + chunk kwargs from config; CLI document positional removed
 - [Phase 05]: 05-02: Infer calls counted by distinct id(model in_data), not prompt_index==0 alone (WR-05)
 - [Phase 05]: 05-02: One-chunk pre-check uses document_path text vs config max_char_buffer; buffer raised to 40000 for example_document.md
+- [Phase 05]: Chunk printout uses ##########/*******/%%%%%% titles; document_id only under percent marker
 
 ### Pending Todos
 
@@ -125,6 +127,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 261011-cst | make the script read from config the file in filepath data/example_document.md , make the chunking configurable in the config and load it in the script | 2026-10-11 | d70aa60 | [261011-cst-make-the-script-read-from-config-the-fil](./quick/261011-cst-make-the-script-read-from-config-the-fil/) |
+| 261011-d60 | Mark chunk walkthrough input/output/file id with distinctive delimiter runs | 2026-10-11 | 98b6587 | [261011-d60-the-input-output-and-chunk-chunkiterator](./quick/261011-d60-the-input-output-and-chunk-chunkiterator/) |
 
 ## Deferred Items
 
@@ -136,6 +139,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-11T07:23:40.435Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-10-11T07:32:14.089Z
+Stopped at: Completed 261011-d60-PLAN.md
 Resume file: None
