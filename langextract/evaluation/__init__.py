@@ -22,6 +22,7 @@ from langextract.evaluation.criteria import SameClass
 from langextract.evaluation.criteria import span_iou
 from langextract.evaluation.criteria import SpanIoU
 from langextract.evaluation.criteria import TextMatch
+from langextract.evaluation.matching import greedy_match
 from langextract.evaluation.metrics import ClassScore
 from langextract.evaluation.metrics import EvaluationReport
 from langextract.evaluation.metrics import prf_from_counts
@@ -35,6 +36,7 @@ __all__ = [
     "SameClass",
     "SpanIoU",
     "TextMatch",
+    "greedy_match",
     "prf_from_counts",
     "report_from_counts",
     "span_iou",
