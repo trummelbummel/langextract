@@ -1332,5 +1332,114 @@ class TraceExtractPreflightTest(parameterized.TestCase):
         self.trace.preflight_ollama(url, "gemma3:4b", 1.0)
 
 
+_SINGLE_CALL_LINE = "run: 1 lx.extract, 1 OllamaLanguageModel.infer (1 prompt)"
+
+
+class TraceExtractGuardTest(absltest.TestCase):
+  """Single-inference contract (Phase 5, RUN-03)."""
+
+  def setUp(self):
+    super().setUp()
+    self.trace = _load_script_module()
+    self.base = self.trace.load_config(self.trace._CONFIG_PATH)
+    tmp = pathlib.Path(self.enter_context(tempfile.TemporaryDirectory()))
+    self.doc = tmp / "doc.txt"
+    self.doc.write_text(
+        "Patient reports a headache since Monday and takes ibuprofen.",
+        encoding="utf-8",
+    )
+    self.stub = _StubOllama()
+    threading.Thread(target=self.stub.serve_forever, daemon=True).start()
+    self.addCleanup(self.stub.server_close)
+    self.addCleanup(self.stub.shutdown)
+    self.config = {
+        **self.base,
+        "document_path": str(self.doc),
+        "model_url": self.stub.url,
+        "max_char_buffer": 1000,
+    }
+
+  def _model_record(self, prompts, prompt_index=0, in_data=None):
+    shared = in_data or {
+        "batch_prompts": tuple(prompts),
+        "batch_size": len(prompts),
+        "kwargs": {},
+    }
+    return self.trace.StageRecord(
+        "model",
+        shared,
+        {
+            "prompt_index": prompt_index,
+            "score": 1.0,
+            "raw_model_text": _CANNED,
+        },
+    )
+
+  def test_run_live_ends_with_single_call_line_and_one_generate(self):
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+      code = self.trace.run_live(self.config)
+    lines = out.getvalue().splitlines()
+    self.assertEqual(code, 0)
+    self.assertEqual(lines[-1], _SINGLE_CALL_LINE)
+    self.assertEqual(self.stub.hits, {"/api/tags": 1, "/api/generate": 1})
+
+  def test_check_single_inference_rejects_zero_calls(self):
+    msg = self.trace.check_single_inference([])
+    self.assertIsNotNone(msg)
+    self.assertIn("single-inference contract", msg)
+    self.assertIn("0", msg)
+
+  def test_check_single_inference_rejects_two_calls(self):
+    records = [
+        self._model_record(["p1"]),
+        self._model_record(["p2"]),
+    ]
+    msg = self.trace.check_single_inference(records)
+    self.assertIsNotNone(msg)
+    self.assertIn("single-inference contract", msg)
+    self.assertIn("2", msg)
+
+  def test_check_single_inference_rejects_multi_prompt_batch(self):
+    msg = self.trace.check_single_inference(
+        [self._model_record(["prompt-a", "prompt-b"])]
+    )
+    self.assertIsNotNone(msg)
+    self.assertIn("2 prompts", msg)
+
+  def test_run_live_refuses_document_longer_than_max_char_buffer(self):
+    self.doc.write_text("x" * 1200, encoding="utf-8")
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+      code = self.trace.run_live(self.config)
+    self.assertEqual(code, 1)
+    self.assertEqual(out.getvalue(), "")
+    self.assertStartsWith(err.getvalue(), "Error:")
+    self.assertIn("max_char_buffer", err.getvalue())
+    self.assertEqual(self.stub.hits.get("/api/tags", 0), 0)
+    self.assertEqual(self.stub.hits.get("/api/generate", 0), 0)
+
+  def test_main_returns_1_when_single_inference_guard_fails(self):
+    config_path = self.doc.parent / "config.yaml"
+    config_path.write_text(yaml.safe_dump(self.config), encoding="utf-8")
+    self.enter_context(
+        mock.patch.object(self.trace, "_CONFIG_PATH", config_path)
+    )
+    # Identity wrappers leave the sink empty → 0 Ollama infer records.
+    self.enter_context(
+        mock.patch.object(
+            self.trace,
+            "make_stage_wrappers",
+            return_value={},
+        )
+    )
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+      code = self.trace.main([])
+    self.assertEqual(code, 1)
+    self.assertIn("single-inference contract", err.getvalue())
+    self.assertStartsWith(err.getvalue(), "Error:")
+
+
 if __name__ == "__main__":
   absltest.main()

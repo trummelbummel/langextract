@@ -1,0 +1,9 @@
+{
+  "command": ".venv/bin/python tests/trace_extract_test.py TraceExtractGuardTest",
+  "exitCode": 1,
+  "output": "TAP version 13\nnot ok 1 - test_run_live_ends_with_single_call_line_and_one_generate\nnot ok 2 - test_check_single_inference_rejects_zero_calls\nnot ok 3 - test_check_single_inference_rejects_two_calls\nnot ok 4 - test_check_single_inference_rejects_multi_prompt_batch\nnot ok 5 - test_run_live_refuses_document_longer_than_max_char_buffer\nnot ok 6 - test_main_returns_1_when_single_inference_guard_fails\n# tests 6\n# pass 0\n# fail 6\n",
+  "targetTest": "test_run_live_ends_with_single_call_line_and_one_generate",
+  "targetFile": "tests/trace_extract_test.py",
+  "expected": "run_live returns 0; last stdout line is 'run: 1 lx.extract, 1 OllamaLanguageModel.infer (1 prompt)'; stub /api/generate == 1 and /api/tags == 1",
+  "actual": "AssertionError: last line was align grounding output, not the single-call contract line (guard not implemented)"
+}
