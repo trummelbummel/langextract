@@ -45,6 +45,9 @@ _CONFIG_PATH = _REPO_ROOT / 'config.yaml'
 _REDACTION_TOKEN = '<REDACTED>'
 _PROBES_ACTIVE = False
 _MAX_TAGS_BYTES = 1024 * 1024
+# Library default for lx.extract max_char_buffer; one-chunk pre-check ceiling.
+_MAX_CHAR_BUFFER = 1000
+_SINGLE_CALL_LINE = 'run: 1 lx.extract, 1 OllamaLanguageModel.infer (1 prompt)'
 
 _WrapFactory = Callable[[Callable[..., Any]], Callable[..., Any]]
 
@@ -945,6 +948,30 @@ def _extract_kwargs(config: Mapping[str, Any]) -> dict[str, Any]:
   }
 
 
+def check_single_inference(
+    records: Iterable[StageRecord],
+) -> str | None:
+  """Return an error if records are not exactly one one-prompt Ollama infer.
+
+  Counts infer calls via distinct model-record in_data identities (Phase 4
+  shares one in_data dict per OllamaLanguageModel.infer call).
+
+  :param records: Stage records collected during the live extract.
+  :return: None when the single-inference contract holds, else an error string.
+  """
+  model = [r for r in records if r.label == 'model']
+  by_call = {id(r.in_data): r for r in model}
+  calls = len(by_call)
+  prompts = sum(len(r.in_data['batch_prompts']) for r in by_call.values())
+  if calls == 1 and prompts == 1:
+    return None
+  return (
+      'run broke the single-inference contract: expected 1 '
+      f'OllamaLanguageModel.infer call with 1 prompt, saw {calls} call(s) / '
+      f'{prompts} prompts'
+  )
+
+
 def run_live(config: Mapping[str, Any]) -> int:
   """Preflight Ollama, run one traced lx.extract and print the walkthrough.
 
@@ -952,6 +979,16 @@ def run_live(config: Mapping[str, Any]) -> int:
   :return: Process exit code (0 on success).
   :raises PreflightError: If the Ollama host or model is not usable.
   """
+  document = _load_document_text(config['document_path'])
+  limit = config.get('max_char_buffer', _MAX_CHAR_BUFFER)
+  if len(document) > limit:
+    print(
+        f'Error: document is {len(document)} chars; keep it ≤ {limit} '
+        f'(max_char_buffer, default {_MAX_CHAR_BUFFER}) so the run is one '
+        'chunk and one inference',
+        file=sys.stderr,
+    )
+    return 1
   preflight_ollama(
       config['model_url'], config['model_id'], config['preflight_timeout_s']
   )
@@ -964,6 +1001,11 @@ def run_live(config: Mapping[str, Any]) -> int:
       lx.extract(**_extract_kwargs(config))
   finally:
     print_stage_records(sink, config)
+  guard_error = check_single_inference(sink)
+  if guard_error is not None:
+    print(f'Error: {guard_error}', file=sys.stderr)
+    return 1
+  print(_SINGLE_CALL_LINE)
   return 0
 
 

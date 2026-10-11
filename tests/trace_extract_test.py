@@ -1252,15 +1252,21 @@ class TraceExtractPreflightTest(parameterized.TestCase):
     threading.Thread(target=self.stub.serve_forever, daemon=True).start()
     self.addCleanup(self.stub.server_close)
     self.addCleanup(self.stub.shutdown)
+    # TemporaryDirectory (not absl create_tempdir): make test runs under pytest,
+    # where --test_tmpdir is unset and create_tempdir raises UnparsedFlagAccessError.
+    tmp = pathlib.Path(self.enter_context(tempfile.TemporaryDirectory()))
+    doc = tmp / "short.txt"
+    doc.write_text(
+        "short clinical sentence for preflight tests.", encoding="utf-8"
+    )
     self.config = {
         **self.trace.load_config(self.trace._CONFIG_PATH),
         "model_url": self.stub.url,
         "preflight_timeout_s": 0.2,
+        "document_path": str(doc),
+        "max_char_buffer": 1000,
     }
-    # TemporaryDirectory (not absl create_tempdir): make test runs under pytest,
-    # where --test_tmpdir is unset and create_tempdir raises UnparsedFlagAccessError.
-    tmp = self.enter_context(tempfile.TemporaryDirectory())
-    config_path = pathlib.Path(tmp) / "config.yaml"
+    config_path = tmp / "config.yaml"
     config_path.write_text(yaml.safe_dump(self.config), encoding="utf-8")
     self.enter_context(
         mock.patch.object(self.trace, "_CONFIG_PATH", config_path)
@@ -1437,8 +1443,12 @@ class TraceExtractGuardTest(absltest.TestCase):
     with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
       code = self.trace.main([])
     self.assertEqual(code, 1)
-    self.assertIn("single-inference contract", err.getvalue())
-    self.assertStartsWith(err.getvalue(), "Error:")
+    err_text = err.getvalue()
+    self.assertIn("single-inference contract", err_text)
+    self.assertTrue(
+        any(line.startswith("Error:") for line in err_text.splitlines()),
+        err_text,
+    )
 
 
 if __name__ == "__main__":
