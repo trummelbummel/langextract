@@ -22,6 +22,7 @@ import sys
 from unittest import mock
 
 from absl.testing import absltest
+from absl.testing import parameterized
 
 from langextract import chunking
 from langextract import data
@@ -292,7 +293,7 @@ class TraceExtractSnapshotTest(absltest.TestCase):
     self.assertIsInstance(grounded.alignment_status, str)
 
 
-class TraceExtractWrapperTest(absltest.TestCase):
+class TraceExtractWrapperTest(parameterized.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -486,6 +487,100 @@ class TraceExtractWrapperTest(absltest.TestCase):
     self.assertIn("use_fences': False", parse_part)
     self.assertIn("wrapper_key': 'extractions'", parse_part)
     self.assertIn("extractions:", parse_part)
+
+  def _parse_section(self, canned):
+    wrappers = self.trace.make_stage_wrappers(self.sink, self.config)
+    _patch_stages(self, wrappers, ["model", "parse"])
+    _run_offline_extract(self, canned)
+    printed = self._print_records(self.sink)
+    return printed[printed.index("[parse]") :]
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name="not_json",
+          canned="not json",
+          error="Failed to parse JSON content",
+          message="empty_parse_message",
+      ),
+      dict(
+          testcase_name="empty_string",
+          canned="",
+          error="Empty or invalid input string",
+          message="empty_parse_message",
+      ),
+      dict(
+          testcase_name="fenced_without_use_fences",
+          canned='```json\n{"extractions": [{"symptom": "headache"}]}\n```',
+          error="Failed to parse JSON content",
+          message="empty_parse_message",
+      ),
+      dict(
+          testcase_name="valid_empty_list",
+          canned='{"extractions": []}',
+          error=None,
+          message="empty_list_message",
+      ),
+  )
+  def test_parse_callout_follows_raw_text_and_diagnosis(
+      self, canned, error, message
+  ):
+    section = self._parse_section(canned)
+
+    record = next(r for r in self.sink if r.label == "parse")
+    self.assertEqual(record.out_data["extractions"], ())
+    parse_error = record.out_data["parse_error"]
+    if error is None:
+      self.assertIsNone(parse_error)
+    else:
+      self.assertIn(error, parse_error)
+    shown = self.config[message].strip()
+    other = {"empty_parse_message", "empty_list_message"} - {message}
+    self.assertIn(shown, section)
+    for name in other:
+      self.assertNotIn(self.config[name].strip(), section)
+    self.assertLess(section.index(shown), section.index("\nout:"))
+    if canned:
+      self.assertLess(section.index("raw_model_text"), section.index(shown))
+    if error:
+      self.assertIn(error, section)
+    if "```" in canned:
+      self.assertIn("use_fences': False", section)
+
+  def test_parse_callout_escapes_control_characters(self):
+    section = self._parse_section("café\x1b[31m")
+
+    self.assertNotIn("\x1b", section)
+    self.assertIn("\\x1b", section)
+    self.assertIn("café", section)
+
+  @parameterized.named_parameters(
+      dict(testcase_name="not_json", canned="not json"),
+      dict(testcase_name="valid_empty_list", canned='{"extractions": []}'),
+      dict(testcase_name="non_empty", canned=_CANNED),
+  )
+  def test_parse_diagnosis_adds_no_extra_records(self, canned):
+    self._parse_section(canned)
+
+    self.assertEqual(
+        sorted(r.label for r in self.sink),
+        ["model", "parse"],
+    )
+
+  def test_parse_non_empty_records_no_error_and_no_callout(self):
+    section = self._parse_section(_CANNED)
+
+    record = next(r for r in self.sink if r.label == "parse")
+    self.assertIsNone(record.out_data["parse_error"])
+    for name in ("empty_parse_message", "empty_list_message"):
+      self.assertNotIn(self.config[name].strip(), section)
+
+  def test_config_has_empty_list_message(self):
+    message = self.trace.load_config(self.trace._CONFIG_PATH)[
+        "empty_list_message"
+    ]
+
+    self.assertIsInstance(message, str)
+    self.assertTrue(message.strip())
 
 
 if __name__ == "__main__":
