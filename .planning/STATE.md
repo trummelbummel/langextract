@@ -5,17 +5,17 @@ milestone_name: MVP
 current_phase: 03
 current_phase_name: Call-scoped probe manager
 current_plan: 2
-status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-10-11T06:36:06.692Z"
+status: verifying
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-10-11T06:46:12.311Z"
 last_activity: 2026-10-11
 last_activity_desc: Phase 03 execution started
-state_head: 41dcbd103a51d0ba3067c72c7e2b7e172c8920b3
+state_head: 21ab9c3ba6ae3e104faad793c19b1fce5a2eda5f
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 11
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # Project State
@@ -32,7 +32,7 @@ See: .planning/PROJECT.md (updated 2026-10-09)
 Phase: 03 (Call-scoped probe manager) — EXECUTING
 Current Plan: 2
 Total Plans in Phase: 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-11 — Phase 03 execution started
 
 Progress: [███░░░░░░░] 33%
@@ -71,6 +71,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 04 P02 | 4 min | 2 tasks | 3 files |
 | Phase 04 P03 | 10 min | 1 tasks | 3 files |
 | Phase 03 P01 | 4min | 2 tasks | 2 files |
+| Phase 03 P02 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -96,6 +97,8 @@ Recent decisions affecting current work:
 - [Phase 03]: Chunk identity returns original iterator (ChunkIterator.__iter__ returns self)
 - [Phase 03]: Model/align identity use yield from; prompt/parse use return; no functools.wraps
 - [Phase 03]: _PROBE_TARGETS populated lazily so catalog import stays light
+- [Phase 03]: Unknown wrappers= keys raise ValueError with sorted labels
+- [Phase 03]: Self-check stderr 'Error: probe self-check failed' + SystemExit(1); expected RuntimeError swallowed
 
 ### Pending Todos
 
@@ -116,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-11T06:36:06.675Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-10-11T06:46:12.296Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None

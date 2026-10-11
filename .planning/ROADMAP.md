@@ -77,7 +77,7 @@ Plans:
   2. Exiting normally restores the original class attributes so a second call outside the context is unwrapped
   3. An exception raised inside the context still restores the original class attributes (`finally` path)
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans executed
 
 Plans:
 **Wave 1**
@@ -86,7 +86,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 03-02-PLAN.md — Optional `wrappers=` partial-fill; in-script restore self-check wired after catalog in `main`
+- [x] 03-02-PLAN.md — Optional `wrappers=` partial-fill; in-script restore self-check wired after catalog in `main`
 
 ### Phase 4: Stage wrappers
 
@@ -159,7 +159,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Stage catalog & contracts | 2/2 | Complete    | 2026-10-10 |
 | 2. Extraction snapshots | 2/2 | Complete    | 2026-10-10 |
-| 3. Call-scoped probe manager | 1/2 | In Progress|  |
+| 3. Call-scoped probe manager | 2/2 | In Progress|  |
 | 4. Stage wrappers | 3/3 | In Progress|  |
 | 5. Live extract & Ollama preflight | 0/TBD | Not started | - |
 | 6. AnnotatedDocument & walkthrough close | 0/TBD | Not started | - |
