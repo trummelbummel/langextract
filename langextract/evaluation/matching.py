@@ -36,8 +36,11 @@ def greedy_match(
   """Assign predicted extractions to gold with greedy 1:1 matching.
 
   Candidates are pairs that pass every MatchCriterion. Ranking uses
-  ``score_fn`` (default ``span_iou``), sorted by ``(-score, pred_index,
-  gold_index)``. Walk assigns a pair when both indices are still unused.
+  ``score_fn`` (default ``span_iou``). Sort key is exactly
+  ``(-score, pred_index, gold_index)`` so equal IoU (or equal custom
+  scores) prefer lower prediction index, then lower gold index. Walk
+  assigns a pair when both indices are still unused. Empty ``predicted``
+  or ``gold`` returns ``[]``.
 
   Complexity is O(n*m) in the lengths of ``predicted`` and ``gold``.
   """
@@ -52,8 +55,8 @@ def greedy_match(
       ):
         score = ranking_score(pred_extraction, gold_extraction)
         candidates.append((score, pred_index, gold_index))
-  # INTENTIONAL RED (07-03 Task 2): invert gold_index so equal-IoU tie-break fails.
-  candidates.sort(key=lambda item: (-item[0], item[1], -item[2]))
+  # Sort key (-score, pred_index, gold_index): IoU-desc, then lower indices.
+  candidates.sort(key=lambda item: (-item[0], item[1], item[2]))
   used_pred: set[int] = set()
   used_gold: set[int] = set()
   matches: list[tuple[int, int]] = []
