@@ -965,6 +965,74 @@ class TraceExtractProbeTest(absltest.TestCase):
       with self.trace.trace_probes(wrappers={"not-a-stage": lambda o: o}):
         pass
 
+  def test_self_check_probe_restore_silent_success(self):
+    originals = self._originals()
+    out = io.StringIO()
+    err = io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+      result = self.trace._self_check_probe_restore()
+    self.assertIsNone(result)
+    self.assertEqual(out.getvalue(), "")
+    self.assertEqual(err.getvalue(), "")
+    for label, (cls, attr) in _STAGE_TARGETS.items():
+      self.assertIs(
+          getattr(cls, attr),
+          originals[label],
+          msg=f"{label} should match pre-check original",
+      )
+    self.assertFalse(self.trace._PROBES_ACTIVE)
+
+  def test_self_check_probe_restore_failure_exits(self):
+    originals = self._originals()
+
+    def noop_restore(saved):
+      del saved
+
+    with mock.patch.object(self.trace, "_restore_probe_attrs", noop_restore):
+      out = io.StringIO()
+      err = io.StringIO()
+      with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        with self.assertRaises(SystemExit) as cm:
+          self.trace._self_check_probe_restore()
+      self.assertEqual(cm.exception.code, 1)
+      self.assertEqual(out.getvalue(), "")
+      self.assertRegex(err.getvalue(), r"(?i)error:.*probe")
+    # Clean up leaked wraps from the noop restore so later tests stay isolated.
+    for label, (cls, attr) in _STAGE_TARGETS.items():
+      setattr(cls, attr, originals[label])
+    self.trace._PROBES_ACTIVE = False
+
+  def test_main_runs_self_check_after_catalog_silently(self):
+    self.assertTrue(hasattr(self.trace, "_self_check_probe_restore"))
+    calls = []
+
+    def spy():
+      calls.append(1)
+
+    out = io.StringIO()
+    err = io.StringIO()
+    with mock.patch.object(self.trace, "_self_check_probe_restore", spy):
+      with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        code = self.trace.main()
+    self.assertEqual(code, 0)
+    self.assertEqual(calls, [1])
+    self.assertEqual(err.getvalue(), "")
+    text = out.getvalue()
+    labels = [
+        "prompt-template",
+        "chunk",
+        "prompt",
+        "model",
+        "parse",
+        "align",
+        "annotated-document",
+    ]
+    indexes = [text.index(f"[{label}]") for label in labels]
+    self.assertEqual(indexes, sorted(indexes))
+    self.assertIn("helper: WordAligner.align_extractions", text)
+    self.assertNotIn("probe self-check", text)
+    self.assertNotIn("grounding pair", text)
+
 
 if __name__ == "__main__":
   absltest.main()

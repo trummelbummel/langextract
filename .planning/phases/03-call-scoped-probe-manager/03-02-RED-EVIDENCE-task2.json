@@ -1,0 +1,9 @@
+{
+  "command": ".venv/bin/python tests/trace_extract_test.py TraceExtractProbeTest.test_self_check_probe_restore_silent_success TraceExtractProbeTest.test_self_check_probe_restore_failure_exits TraceExtractProbeTest.test_main_runs_self_check_after_catalog_silently",
+  "exitCode": 1,
+  "output": "TAP version 13\nnot ok 1 - test_self_check_probe_restore_silent_success\nnot ok 2 - test_self_check_probe_restore_failure_exits\nnot ok 3 - test_main_runs_self_check_after_catalog_silently\n# tests 3\n# pass 0\n# fail 3\n",
+  "targetTest": "test_self_check_probe_restore_silent_success",
+  "targetFile": "tests/trace_extract_test.py",
+  "expected": "_self_check_probe_restore() returns None silently and leaves five originals restored; main calls it after catalog",
+  "actual": "AttributeError: module 'trace_extract' has no attribute '_self_check_probe_restore'"
+}
