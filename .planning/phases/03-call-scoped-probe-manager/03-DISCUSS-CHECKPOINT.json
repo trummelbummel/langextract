@@ -1,14 +1,14 @@
 {
   "phase": "03",
   "areas_completed": [
-    "Probe API shape"
+    "Probe API shape",
+    "Phase-3 wrap bodies"
   ],
   "areas_remaining": [
-    "Phase-3 wrap bodies",
     "Prove restore",
     "Install failure / re-entry"
   ],
-  "current_area": "Phase-3 wrap bodies",
+  "current_area": "Prove restore",
   "decisions": {
     "Probe API shape": {
       "entry": "context manager",
@@ -18,8 +18,10 @@
     },
     "Phase-3 wrap bodies": {
       "default_behavior": "pure identity",
-      "generators": "transparent yield (never list())"
+      "generators": "transparent yield (never list())",
+      "metadata": "minimal \u2014 no functools.wraps",
+      "partial_wrappers": "fill missing with identity; always install all five"
     }
   },
-  "questions_asked": 2
+  "questions_asked": 0
 }

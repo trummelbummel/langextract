@@ -7,6 +7,8 @@ env:
 	$(PYTHON) -m venv $(VENV)
 	$(VENV)/bin/python -m pip install --upgrade pip
 	$(VENV)/bin/pip install -e .
+	@echo "Starting a shell with $(VENV) activated (type 'exit' to leave)..."
+	@. $(VENV)/bin/activate && exec $${SHELL:-/bin/sh} -i
 
 test:
 	$(VENV)/bin/pip install "setuptools>=77.0" wheel -e ".[openai,dev,test]"

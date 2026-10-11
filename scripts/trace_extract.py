@@ -54,8 +54,11 @@ STAGE_CATALOG: list[tuple[str, str, str]] = [
 ]
 
 
-def load_config(path: Path) -> dict:
+def load_config(path: Path) -> dict[str, Any]:
   """Load call constants from a YAML mapping at path.
+
+  :param path: YAML config file to read.
+  :return: The parsed top-level mapping.
 
   Raises:
     SystemExit: with code 1 when path is missing or not a mapping.
@@ -80,32 +83,29 @@ def redact(
 
   Matching is case-insensitive on key names. Nested mappings are redacted
   at least one level deep. When keys is None, loads redact_keys from config.
+
+  :param mapping: Mapping to redact; not modified.
+  :param keys: Key names to redact; defaults to config redact_keys.
+  :return: Redacted copy of mapping.
   """
   if keys is None:
     keys = load_config(_CONFIG_PATH)['redact_keys']
   key_set = {k.lower() for k in keys}
+  flat = _redact_flat(mapping, key_set)
+  return {
+      k: _redact_flat(v, key_set) if isinstance(v, Mapping) else v
+      for k, v in flat.items()
+  }
 
-  def _redact_one(value: Any) -> Any:
-    if isinstance(value, Mapping):
-      return {
-          k: (
-              _REDACTION_TOKEN
-              if isinstance(k, str) and k.lower() in key_set
-              else v
-          )
-          for k, v in value.items()
-      }
-    return value
 
-  out: dict[str, Any] = {}
-  for k, v in mapping.items():
-    if isinstance(k, str) and k.lower() in key_set:
-      out[k] = _REDACTION_TOKEN
-    elif isinstance(v, Mapping):
-      out[k] = _redact_one(v)
-    else:
-      out[k] = v
-  return out
+def _redact_flat(
+    mapping: Mapping[str, Any], key_set: set[str]
+) -> dict[str, Any]:
+  """Replace values of sensitive keys in mapping, one level deep."""
+  return {
+      k: _REDACTION_TOKEN if isinstance(k, str) and k.lower() in key_set else v
+      for k, v in mapping.items()
+  }
 
 
 def _host_from_model_url(model_url: str) -> str:
@@ -114,8 +114,11 @@ def _host_from_model_url(model_url: str) -> str:
   return parsed.netloc or model_url
 
 
-def print_call_header(config: dict) -> None:
-  """Print the static lx.extract call header from config constants."""
+def print_call_header(config: Mapping[str, Any]) -> None:
+  """Print the static lx.extract call header from config constants.
+
+  :param config: Config mapping with model_id, model_url and provider.
+  """
   model_id = config.get('model_id', '')
   model_url = config.get('model_url', '')
   provider = config.get('provider', '')
@@ -144,13 +147,15 @@ class ExtractionSnapshot:
   extraction_text: str
   extraction_index: int | None
   group_index: int | None
-  attributes: dict | None
+  attributes: dict[str, Any] | None
   char_interval: tuple[int | None, int | None] | None
   token_interval: tuple[int, int] | None
   alignment_status: str | None
 
 
-def _copy_attributes(attributes: Mapping[str, Any] | None) -> dict | None:
+def _copy_attributes(
+    attributes: Mapping[str, Any] | None,
+) -> dict[str, Any] | None:
   """Copy attributes one level deep so list values are not aliased."""
   if attributes is None:
     return None
@@ -181,11 +186,16 @@ def _snapshot_extraction(extraction: Any) -> ExtractionSnapshot:
 def snapshot_extractions(
     extractions: Iterable[Any],
 ) -> tuple[ExtractionSnapshot, ...]:
-  """Snapshot extractions in order, before later stages mutate them."""
+  """Snapshot extractions in order, before later stages mutate them.
+
+  :param extractions: Live extraction objects to copy.
+  :return: One ExtractionSnapshot per extraction, in input order.
+  """
   return tuple(_snapshot_extraction(e) for e in extractions)
 
 
 def _format_interval(interval: tuple[int | None, int | None] | None) -> str:
+  """Format a half-open char interval, or 'None'."""
   if interval is None:
     return 'None'
   return f'[{interval[0]}, {interval[1]})'
@@ -214,9 +224,23 @@ def print_grounding_pair(
 
   Extractions that align could not ground show ungrounded_label on the align
   line; the parse line keeps None (not yet grounded).
+
+  :param parse_snapshots: Snapshots taken after the parse stage.
+  :param align_snapshots: Snapshots taken after the align stage.
+  :param ungrounded_label: Text shown in place of None on align lines.
+  :raises TypeError: If any item is not an ExtractionSnapshot.
+  :raises ValueError: If the two sequences differ in length or order.
   """
   parse_list = list(parse_snapshots)
   align_list = list(align_snapshots)
+  _validate_grounding_pair(parse_list, align_list)
+  _print_grounding_lines(parse_list, align_list, ungrounded_label)
+
+
+def _validate_grounding_pair(
+    parse_list: list[ExtractionSnapshot], align_list: list[ExtractionSnapshot]
+) -> None:
+  """Raise when the parse and align snapshots cannot be paired."""
   for item in (*parse_list, *align_list):
     if not isinstance(item, ExtractionSnapshot):
       raise TypeError(
@@ -237,6 +261,14 @@ def print_grounding_pair(
           f'parse/align mismatch at position {i}: '
           f'{parse.extraction_text!r} vs {align.extraction_text!r}'
       )
+
+
+def _print_grounding_lines(
+    parse_list: list[ExtractionSnapshot],
+    align_list: list[ExtractionSnapshot],
+    ungrounded_label: str,
+) -> None:
+  """Print the paired parse and align lines for each extraction."""
   pairs = list(zip(parse_list, align_list))
   print(f'grounding pair (parse → align): {len(pairs)} extractions')
   if not pairs:
@@ -252,6 +284,10 @@ def print_grounding_pair(
 
 
 def main() -> int:
+  """Print the call header and stage catalog.
+
+  :return: Process exit code (0 on success).
+  """
   config = load_config(_CONFIG_PATH)
   print_call_header(config)
   print_stage_catalog()
