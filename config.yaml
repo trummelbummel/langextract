@@ -17,6 +17,29 @@ ungrounded_label: ungrounded
 # Printed beside the token/char offsets under [align]
 chunk_offset_caption: chunk start in the document
 
+# Document sent to the one live lx.extract call (short: one chunk)
+sample_text: Patient reports a headache since Monday and takes ibuprofen.
+
+# Prompt description for the live call
+prompt_description: >
+  Extract symptoms and medications in order of appearance, using the exact
+  text from the source.
+
+# One few-shot example for the live call; texts appear verbatim in its text
+examples:
+  - text: He has a cough and takes aspirin.
+    extractions:
+      - extraction_class: symptom
+        extraction_text: cough
+      - extraction_class: medication
+        extraction_text: aspirin
+
+# Seconds to wait for GET /api/tags before the live call
+preflight_timeout_s: 5
+
+# Seconds for the single /api/generate request (cold model load can be slow)
+request_timeout_s: 300
+
 redact_keys:
   - api_key
   - apikey

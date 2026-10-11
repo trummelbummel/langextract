@@ -17,21 +17,25 @@
 
 Usage:
     python scripts/trace_extract.py
+    python scripts/trace_extract.py --catalog-only
 """
 
 from __future__ import annotations
 
+import argparse
 from collections.abc import Callable, Iterable, Iterator, Mapping
 import contextlib
 import dataclasses
 import functools
 import inspect
+import json
 from pathlib import Path
 import pprint
 import sys
 import textwrap
 from typing import Any
 from urllib.parse import urlparse
+import urllib.request
 
 import yaml
 
@@ -810,12 +814,105 @@ def _self_check_probe_restore() -> None:
     raise SystemExit(1) from exc
 
 
-def main() -> int:
-  """Print the call header and stage catalog, then prove probe restore.
+class PreflightError(RuntimeError):
+  """Raised when the Ollama host or model is not usable."""
 
+
+def preflight_ollama(model_url: str, model_id: str, timeout: float) -> None:
+  """Check that model_id is listed by GET {model_url}/api/tags.
+
+  :param model_url: Base URL of the Ollama server.
+  :param model_id: Model name that must be listed.
+  :param timeout: Seconds to wait for the response.
+  :raises PreflightError: If the model is not listed.
+  """
+  url = f'{model_url.rstrip("/")}/api/tags'
+  with urllib.request.urlopen(url, timeout=timeout) as response:
+    payload = json.loads(response.read())
+  names = {
+      value
+      for entry in payload['models']
+      for value in (entry.get('name'), entry.get('model'))
+  }
+  if model_id not in names:
+    raise PreflightError(f'model {model_id} is not available')
+
+
+def _extract_kwargs(config: Mapping[str, Any]) -> dict[str, Any]:
+  """Build the pinned lx.extract keyword arguments from config.
+
+  :param config: Config mapping with the call constants.
+  :return: Keyword arguments for one local-Ollama lx.extract call.
+  """
+  # pylint: disable=import-outside-toplevel
+  import langextract as lx
+  from langextract.providers import ollama
+
+  examples = [
+      lx.data.ExampleData(
+          text=example['text'],
+          extractions=[
+              lx.data.Extraction(
+                  extraction_class=item['extraction_class'],
+                  extraction_text=item['extraction_text'],
+              )
+              for item in example['extractions']
+          ],
+      )
+      for example in config['examples']
+  ]
+  return {
+      'text_or_documents': config['sample_text'],
+      'prompt_description': config['prompt_description'],
+      'examples': examples,
+      'model_id': config['model_id'],
+      'model_url': config['model_url'],
+      'resolver_params': {'format_handler': ollama.OLLAMA_FORMAT_HANDLER},
+      'language_model_params': {'timeout': config['request_timeout_s']},
+      'extraction_passes': 1,
+      'debug': False,
+      'show_progress': False,
+      'fetch_urls': False,
+  }
+
+
+def run_live(config: Mapping[str, Any]) -> int:
+  """Preflight Ollama, run one traced lx.extract and print the walkthrough.
+
+  :param config: Config mapping with the call constants.
   :return: Process exit code (0 on success).
   """
+  preflight_ollama(
+      config['model_url'], config['model_id'], config['preflight_timeout_s']
+  )
+  import langextract as lx  # pylint: disable=import-outside-toplevel
+
+  print_call_header(config)
+  sink: list[StageRecord] = []
+  try:
+    with trace_probes(wrappers=make_stage_wrappers(sink, config)):
+      lx.extract(**_extract_kwargs(config))
+  finally:
+    print_stage_records(sink, config)
+  return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+  """Run the live traced call, or print the catalog with --catalog-only.
+
+  :param argv: Command-line arguments; defaults to sys.argv[1:].
+  :return: Process exit code (0 on success).
+  """
+  parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+  parser.add_argument(
+      '--catalog-only',
+      action='store_true',
+      help='print the call header and stage catalog without calling Ollama',
+  )
+  args = parser.parse_args(argv)
   config = load_config(_CONFIG_PATH)
+  if not args.catalog_only:
+    return run_live(config)
   print_call_header(config)
   print_stage_catalog()
   _self_check_probe_restore()
