@@ -74,6 +74,11 @@ def _resolve_criteria(
 ) -> list[MatchCriterion]:
   """Build MatchCriterion list from convenience flags or explicit criteria."""
   if criteria is not None:
+    if iou_threshold != 0.5 or match_attributes or text_eval_func is not None:
+      raise ValueError(
+          "criteria= is mutually exclusive with non-default convenience"
+          " flags (iou_threshold, match_attributes, text_eval_func)"
+      )
     return list(criteria)
   resolved: list[MatchCriterion] = [
       SameClass(),
@@ -99,7 +104,8 @@ def evaluate(
 
   Pairs documents by ``document_id`` (identical ID sets required; duplicates
   within a side raise ``ValueError``). Per document, runs ``greedy_match``
-  then aggregates TP/FP/FN into per-class and micro scores.
+  then aggregates TP/FP/FN into per-class and micro scores. ``criteria=`` is
+  mutually exclusive with non-default convenience flags.
   """
   match_criteria = _resolve_criteria(
       iou_threshold=iou_threshold,

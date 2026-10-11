@@ -161,4 +161,18 @@ forbidden_modules = [
   "langextract.chunking",
   "langextract.prompting",
   "langextract.resolver",
+  "langextract.evaluation",
+]
+
+[[tool.importlinter.contracts]]
+name = "Evaluation must not import high-level pipeline modules"
+type = "forbidden"
+source_modules = ["langextract.evaluation"]
+forbidden_modules = [
+  "langextract.annotation",
+  "langextract.providers",
+  "langextract.chunking",
+  "langextract.prompting",
+  "langextract.resolver",
+  "langextract.extraction",
 ]
