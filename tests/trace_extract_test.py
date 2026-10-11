@@ -864,6 +864,8 @@ class TraceExtractProbeTest(absltest.TestCase):
     self.assertFalse(self.trace._PROBES_ACTIVE)
 
   def test_probe_targets_exposes_five_stage_labels(self):
+    self.trace._load_probe_targets()
+    self.assertIsNotNone(self.trace._PROBE_TARGETS)
     self.assertCountEqual(
         self.trace._PROBE_TARGETS.keys(),
         list(_STAGE_TARGETS),

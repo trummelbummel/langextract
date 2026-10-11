@@ -435,20 +435,27 @@ def make_stage_wrappers(
   }
 
 
+_PROBE_TARGETS: dict[str, tuple[type, str]] | None = None
+
+
 def _load_probe_targets() -> dict[str, tuple[type, str]]:
   """Resolve the five extract call targets (lazy langextract import)."""
+  global _PROBE_TARGETS
+  if _PROBE_TARGETS is not None:
+    return _PROBE_TARGETS
   from langextract import chunking
   from langextract import prompting
   from langextract import resolver
   from langextract.providers import ollama
 
-  return {
+  _PROBE_TARGETS = {
       'chunk': (chunking.ChunkIterator, '__iter__'),
       'prompt': (prompting.ContextAwarePromptBuilder, 'build_prompt'),
       'model': (ollama.OllamaLanguageModel, 'infer'),
       'parse': (resolver.Resolver, 'resolve'),
       'align': (resolver.Resolver, 'align'),
   }
+  return _PROBE_TARGETS
 
 
 def _identity_wrap_return(
@@ -513,7 +520,14 @@ def trace_probes(
       original = cls.__dict__[attr]
       setattr(cls, attr, factories[label](original))
       saved.append((cls, attr, original))
-    _PROBES_ACTIVE = True
+  except Exception:
+    for cls, attr, original in reversed(saved):
+      setattr(cls, attr, original)
+    _PROBES_ACTIVE = False
+    raise
+
+  _PROBES_ACTIVE = True
+  try:
     yield
   finally:
     for cls, attr, original in reversed(saved):
