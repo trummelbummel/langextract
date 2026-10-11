@@ -722,5 +722,106 @@ class TraceExtractWrapperTest(parameterized.TestCase):
     self.assertIn("align: []", section)
 
 
+class TraceExtractProbeTest(absltest.TestCase):
+  """Call-scoped identity probes (Phase 3)."""
+
+  def setUp(self):
+    super().setUp()
+    self.trace = _load_script_module()
+
+  def _originals(self):
+    return {
+        label: cls.__dict__[attr]
+        for label, (cls, attr) in _STAGE_TARGETS.items()
+    }
+
+  def test_trace_probes_installs_five_and_restores_on_exception(self):
+    originals = self._originals()
+    raised = False
+    try:
+      with self.trace.trace_probes():
+        for label, (cls, attr) in _STAGE_TARGETS.items():
+          self.assertIsNot(
+              getattr(cls, attr),
+              originals[label],
+              msg=f"{label} should be wrapped",
+          )
+        raise RuntimeError("probe self-check")
+    except RuntimeError as exc:
+      raised = True
+      self.assertEqual(str(exc), "probe self-check")
+    self.assertTrue(raised)
+    for label, (cls, attr) in _STAGE_TARGETS.items():
+      self.assertIs(
+          getattr(cls, attr),
+          originals[label],
+          msg=f"{label} should be restored",
+      )
+
+  def test_trace_probes_identity_passthrough_no_side_effects(self):
+    examples = [
+        data.ExampleData(
+            "He has a cough.", [data.Extraction("symptom", "cough")]
+        )
+    ]
+    template = prompting.PromptTemplateStructured(
+        description="Extract symptoms.", examples=examples
+    )
+    builder = prompting.ContextAwarePromptBuilder(template)
+    parser = resolver.Resolver(format_handler=ollama.OLLAMA_FORMAT_HANDLER)
+    resolved = parser.resolve(_CANNED, suppress_parse_errors=True)
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+      with self.trace.trace_probes():
+        chunk_iter = chunking.ChunkIterator(
+            text=_SOURCE_TEXT,
+            max_char_buffer=1000,
+            tokenizer_impl=tokenizer_lib.RegexTokenizer(),
+        )
+        chunks = list(iter(chunk_iter))
+        self.assertLen(chunks, 1)
+        self.assertEqual(chunks[0].chunk_text, _SOURCE_TEXT)
+
+        prompt = builder.build_prompt(
+            chunk_text=_SOURCE_TEXT,
+            document_id="doc-1",
+            additional_context=None,
+        )
+        self.assertIsInstance(prompt, str)
+        self.assertIn(_SOURCE_TEXT, prompt)
+
+        model = ollama.OllamaLanguageModel(
+            model_id="gemma3:4b",
+            model_url="http://localhost:11434",
+            format_type=data.FormatType.JSON,
+        )
+
+        def fake_query(self, prompt_text, **kwargs):
+          return {"response": _CANNED}
+
+        with mock.patch.object(
+            ollama.OllamaLanguageModel, "_ollama_query", fake_query
+        ):
+          outputs = list(model.infer([prompt]))
+        self.assertLen(outputs, 1)
+        self.assertEqual(outputs[0][0].output, _CANNED)
+
+        parsed = parser.resolve(_CANNED, suppress_parse_errors=True)
+        self.assertLen(parsed, 2)
+        aligned = list(
+            parser.align(parsed, _SOURCE_TEXT, token_offset=0, char_offset=0)
+        )
+        self.assertLen(aligned, 2)
+        self.assertEqual(aligned[0].extraction_text, "headache")
+    self.assertEqual(buf.getvalue(), "")
+
+  def test_probes_active_false_after_exception_exit(self):
+    with self.assertRaises(RuntimeError):
+      with self.trace.trace_probes():
+        self.assertTrue(self.trace._PROBES_ACTIVE)
+        raise RuntimeError("boom")
+    self.assertFalse(self.trace._PROBES_ACTIVE)
+
+
 if __name__ == "__main__":
   absltest.main()

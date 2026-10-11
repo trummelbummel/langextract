@@ -1,0 +1,9 @@
+{
+  "command": ".venv/bin/python tests/trace_extract_test.py TraceExtractProbeTest",
+  "exitCode": 1,
+  "output": "TAP version 13\nnot ok 1 - test_probes_active_false_after_exception_exit\nnot ok 2 - test_trace_probes_identity_passthrough_no_side_effects\nnot ok 3 - test_trace_probes_installs_five_and_restores_on_exception\n# tests 3\n# pass 0\n# fail 3\n",
+  "targetTest": "test_trace_probes_installs_five_and_restores_on_exception",
+  "targetFile": "tests/trace_extract_test.py",
+  "expected": "with trace_probes(): installs five distinct identity wraps; exception exit restores originals by identity",
+  "actual": "AttributeError: module 'trace_extract' has no attribute 'trace_probes'"
+}
