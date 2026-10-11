@@ -92,7 +92,7 @@ Plans:
   3. Align-stage output shows spans, status, chunk offsets (even when 0), and source slice or `ungrounded`
   4. Empty parse is called out in words next to the raw model text, and parse inputs include format/fence/wrapper flags
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans executed
 
 Plans:
 **Wave 1**
@@ -105,7 +105,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 04-03-PLAN.md — Align wrapper with offsets/slices/ungrounded; five-stage walkthrough; trace_probes integration (needs Phase 3)
+- [x] 04-03-PLAN.md — Align wrapper with offsets/slices/ungrounded; five-stage walkthrough; trace_probes integration (needs Phase 3) — Task 1 done; **Task 2 (trace_probes integration) deferred, blocked on Phase 3**
 
 ### Phase 5: Live extract & Ollama preflight
 
@@ -151,7 +151,7 @@ Plans:
 | 1. Stage catalog & contracts | 2/2 | Complete    | 2026-10-10 |
 | 2. Extraction snapshots | 2/2 | Complete    | 2026-10-10 |
 | 3. Call-scoped probe manager | 0/TBD | Not started | - |
-| 4. Stage wrappers | 2/3 | In Progress|  |
+| 4. Stage wrappers | 3/3 | In Progress|  |
 | 5. Live extract & Ollama preflight | 0/TBD | Not started | - |
 | 6. AnnotatedDocument & walkthrough close | 0/TBD | Not started | - |
 
