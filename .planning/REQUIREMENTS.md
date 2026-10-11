@@ -17,8 +17,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **STG-01**: Walkthrough prints stable stage labels in order: prompt-template, chunk, prompt, model, parse, align, annotated-document
 - [x] **STG-02**: Each stage names the owning function and repo-relative file
-- [ ] **STG-03**: Each stage prints live data in and data out for that call (full payloads for the short input)
-- [ ] **STG-04**: Model stage shows raw model text separate from parsed extractions
+- [x] **STG-03**: Each stage prints live data in and data out for that call (full payloads for the short input)
+- [x] **STG-04**: Model stage shows raw model text separate from parsed extractions
 - [x] **STG-05**: Parse stage shows ungrounded extractions (`char_interval` / `alignment_status` still empty), including empty lists
 - [ ] **STG-06**: Align stage shows spans, status, chunk offsets (even when 0), and source slice or `ungrounded`
 - [ ] **STG-07**: Final stage prints the `AnnotatedDocument` returned by that `extract()` call
@@ -68,8 +68,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RUN-03 | Phase 5 | Pending |
 | STG-01 | Phase 1 | Complete |
 | STG-02 | Phase 1 | Complete |
-| STG-03 | Phase 4 | Pending |
-| STG-04 | Phase 4 | Pending |
+| STG-03 | Phase 4 | Complete |
+| STG-04 | Phase 4 | Complete |
 | STG-05 | Phase 2 | Complete |
 | STG-06 | Phase 4 | Pending |
 | STG-07 | Phase 6 | Pending |

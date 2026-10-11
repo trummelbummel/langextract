@@ -4,18 +4,18 @@ milestone: v1.0
 milestone_name: MVP
 current_phase: 04
 current_phase_name: Stage workshop
-current_plan: 1
+current_plan: 2
 status: executing
-stopped_at: Phase 2 complete, ready to plan Phase 03
-last_updated: "2026-10-11T05:33:28.979Z"
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-10-11T05:48:51.334Z"
 last_activity: 2026-10-11
 last_activity_desc: Phase 04 execution resumed (wave continue)
-state_head: 8b41a14553598bd9c79b55e193d562805953e4c2
+state_head: 88ef4794544bea376d0d732cfe8db20d96c3f16f
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 9
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-09)
 ## Current Position
 
 Phase: 04 (Stage workshop) — EXECUTING
-Current Plan: 1
+Current Plan: 2
 Total Plans in Phase: 3
-Status: Executing Phase 04
+Status: Ready to execute
 Last activity: 2026-10-11 — Phase 04 execution resumed (wave continue)
 
 Progress: [███░░░░░░░] 33%
@@ -67,6 +67,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 01-stage-catalog-contracts P02 | 2min | 2 tasks | 2 files |
 | Phase 02 P01 | 9 min | 2 tasks | 2 files |
 | Phase 02 P02 | 10 min | 2 tasks | 3 files |
+| Phase 04 P01 | 6min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,7 @@ Recent decisions affecting current work:
 - [Phase 1]: redact() accepts explicit keys for tests; defaults to config redact_keys
 - [Phase 1]: Nested redact one level deep; non-matching values keep original types
 - [Phase 02]: Snapshots are duck-typed field copies (attributes copied one level deep, no deepcopy); helpers not wired into main() until Phase 4 — Resolver.align mutates resolve's objects in place; parse record must be copied at resolve return
+- [Phase 04]: [Phase 04-01]: make_stage_wrappers keys are catalog labels with original->replacement values; model records are one per ScoredOutput with prompt_index (0-based yield position per infer call) and batch_size
 
 ### Pending Todos
 
@@ -106,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-10T15:07:44.177Z
-Stopped at: Phase 2 complete, ready to plan Phase 03
+Last session: 2026-10-11T05:48:51.319Z
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None
