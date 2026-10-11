@@ -19,11 +19,16 @@ import importlib.util
 import io
 import pathlib
 import sys
+from unittest import mock
 
 from absl.testing import absltest
 
+from langextract import chunking
 from langextract import data
+from langextract import prompting
 from langextract import resolver
+import langextract as lx
+from langextract.core import types as core_types
 from langextract.providers import ollama
 
 _SCRIPT_PATH = (
@@ -45,6 +50,57 @@ def _load_script_module():
   sys.modules[spec.name] = module
   spec.loader.exec_module(module)
   return module
+
+
+# Stage label -> (class, attribute) that a stage wrapper replaces.
+_STAGE_TARGETS = {
+    "chunk": (chunking.ChunkIterator, "__iter__"),
+    "prompt": (prompting.ContextAwarePromptBuilder, "build_prompt"),
+    "model": (ollama.OllamaLanguageModel, "infer"),
+    "parse": (resolver.Resolver, "resolve"),
+    "align": (resolver.Resolver, "align"),
+}
+
+
+def _patch_stages(test, wrappers, labels):
+  """Installs wrappers[label](original) on each target; restored by cleanup."""
+  for label in labels:
+    cls, attr = _STAGE_TARGETS[label]
+    replacement = wrappers[label](cls.__dict__[attr])
+    test.enter_context(mock.patch.object(cls, attr, replacement))
+
+
+def _run_offline_extract(test, canned):
+  """Runs the real lx.extract with only _ollama_query faked.
+
+  Returns:
+    (AnnotatedDocument, number of fake HTTP calls).
+  """
+  calls = []
+
+  def fake_query(self, prompt, **kwargs):
+    calls.append(prompt)
+    return {"response": canned}
+
+  test.enter_context(
+      mock.patch.object(ollama.OllamaLanguageModel, "_ollama_query", fake_query)
+  )
+  document = lx.extract(
+      _SOURCE_TEXT,
+      prompt_description="Extract symptoms.",
+      examples=[
+          data.ExampleData(
+              "He has a cough.", [data.Extraction("symptom", "cough")]
+          )
+      ],
+      model_id="gemma3:4b",
+      model_url="http://localhost:11434",
+      resolver_params={"format_handler": ollama.OLLAMA_FORMAT_HANDLER},
+      extraction_passes=1,
+      debug=False,
+      show_progress=False,
+  )
+  return document, len(calls)
 
 
 class TraceExtractSnapshotTest(absltest.TestCase):
@@ -233,6 +289,91 @@ class TraceExtractSnapshotTest(absltest.TestCase):
     self.assertEqual(grounded.char_interval, (2, 5))
     self.assertIsInstance(grounded.char_interval, tuple)
     self.assertIsInstance(grounded.alignment_status, str)
+
+
+class TraceExtractWrapperTest(absltest.TestCase):
+
+  def setUp(self):
+    super().setUp()
+    self.trace = _load_script_module()
+    self.config = self.trace.load_config(self.trace._CONFIG_PATH)
+    self.sink = []
+
+  def _print_records(self, records):
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+      self.trace.print_stage_records(records, self.config)
+    return buf.getvalue()
+
+  def _model_record(self, raw_text, prompt="PROMPT TEXT"):
+    return self.trace.StageRecord(
+        "model",
+        {"batch_prompts": (prompt,), "batch_size": 1, "kwargs": {}},
+        {"prompt_index": 0, "score": 1.0, "raw_model_text": raw_text},
+    )
+
+  def test_model_wrapper_records_prompt_and_raw_text_from_offline_extract(self):
+    wrappers = self.trace.make_stage_wrappers(self.sink, self.config)
+    _patch_stages(self, wrappers, ["model"])
+
+    document, calls = _run_offline_extract(self, _CANNED)
+
+    self.assertEqual(calls, 1)
+    self.assertLen(self.sink, 1)
+    record = self.sink[0]
+    self.assertEqual(record.label, "model")
+    self.assertLen(record.in_data["batch_prompts"], 1)
+    self.assertIsInstance(record.in_data["batch_prompts"][0], str)
+    self.assertIn(_SOURCE_TEXT, record.in_data["batch_prompts"][0])
+    self.assertEqual(record.in_data["batch_size"], 1)
+    self.assertEqual(
+        record.out_data,
+        {"prompt_index": 0, "score": 1.0, "raw_model_text": _CANNED},
+    )
+    self.assertLen(document.extractions, 2)
+
+  def test_print_stage_records_escapes_control_characters_in_raw_text(self):
+    record = self._model_record("café\x1b[31m\nline2", prompt="FULL PROMPT")
+
+    printed = self._print_records([record])
+
+    lines = printed.splitlines()
+    self.assertEqual(
+        lines[0],
+        "[model] OllamaLanguageModel.infer — langextract/providers/ollama.py",
+    )
+    self.assertIn("in:", lines)
+    self.assertIn("out:", lines)
+    self.assertIn("FULL PROMPT", printed)
+    self.assertIn("    café\\x1b[31m", lines)
+    self.assertIn("    line2", lines)
+    self.assertNotIn("\x1b", printed)
+
+  def test_print_stage_records_prints_empty_raw_text_explicitly(self):
+    printed = self._print_records([self._model_record("")])
+
+    self.assertIn("  raw_model_text: ''", printed.splitlines())
+
+  def test_print_stage_records_follows_catalog_order_and_skips_missing(self):
+    chunk = self.trace.StageRecord("chunk", {}, {})
+
+    printed = self._print_records([self._model_record("x"), chunk])
+
+    self.assertLess(printed.index("[chunk]"), printed.index("[model]"))
+    self.assertNotIn("[prompt]", printed)
+
+  def test_model_wrapper_redacts_forwarded_kwargs(self):
+    def original(self, batch_prompts, **kwargs):
+      yield [core_types.ScoredOutput(score=1.0, output="text")]
+
+    wrapped = self.trace.make_model_wrapper(self.sink, ["api_key"])(original)
+
+    list(wrapped(None, batch_prompts=["p"], max_workers=10, api_key="x"))
+
+    self.assertEqual(
+        self.sink[0].in_data["kwargs"],
+        {"max_workers": 10, "api_key": "<REDACTED>"},
+    )
 
 
 if __name__ == "__main__":
