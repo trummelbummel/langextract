@@ -6,11 +6,11 @@ current_phase: 05
 current_phase_name: Live extract & Ollama preflight
 current_plan: 1
 status: executing
-stopped_at: Completed 261011-d60-PLAN.md
-last_updated: "2026-10-11T07:32:14.252Z"
+stopped_at: Completed 261011-p2z-PLAN.md
+last_updated: "2026-10-11T16:08:26.734Z"
 last_activity: 2026-10-11
 last_activity_desc: Phase 05 execution started
-state_head: 98b65875b63e90e7cf03a088d5437171b01f100a
+state_head: d84f4594e053844c0d1fd65d7ed19b8b4cb07668
 progress:
   total_phases: 6
   completed_phases: 4
@@ -33,7 +33,7 @@ Phase: 05 (Live extract & Ollama preflight) — EXECUTING
 Current Plan: 1
 Total Plans in Phase: 2
 Status: Executing Phase 05
-Last activity: 2026-10-11 - Completed quick task 261011-d60: chunk walkthrough markers (########## / ******* / %%%%%%)
+Last activity: 2026-10-11 - Completed quick task 261011-p2z: drop_ungrounded opt-in on lx.extract()
 
 Progress: [███████░░░] 67%
 
@@ -112,6 +112,7 @@ Recent decisions affecting current work:
 - [Phase 05]: 05-02: Infer calls counted by distinct id(model in_data), not prompt_index==0 alone (WR-05)
 - [Phase 05]: 05-02: One-chunk pre-check uses document_path text vs config max_char_buffer; buffer raised to 40000 for example_document.md
 - [Phase 05]: Chunk printout uses ##########/*******/%%%%%% titles; document_id only under percent marker
+- [Quick 261011-p2z]: Keyword-only drop_ungrounded=False; _drop_ungrounded filters both extract return paths; INFO when removals > 0
 
 ### Pending Todos
 
@@ -128,6 +129,7 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 261011-cst | make the script read from config the file in filepath data/example_document.md , make the chunking configurable in the config and load it in the script | 2026-10-11 | d70aa60 | [261011-cst-make-the-script-read-from-config-the-fil](./quick/261011-cst-make-the-script-read-from-config-the-fil/) |
 | 261011-d60 | Mark chunk walkthrough input/output/file id with distinctive delimiter runs | 2026-10-11 | 98b6587 | [261011-d60-the-input-output-and-chunk-chunkiterator](./quick/261011-d60-the-input-output-and-chunk-chunkiterator/) |
+| 261011-p2z | Drop ungrounded extractions via opt-in drop_ungrounded on lx.extract() | 2026-10-11 | d84f459 | [261011-p2z-drop-extractions-whose-char-interval-is-](./quick/261011-p2z-drop-extractions-whose-char-interval-is-/) |
 
 ## Deferred Items
 
@@ -139,6 +141,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-11T07:32:14.089Z
-Stopped at: Completed 261011-d60-PLAN.md
+Last session: 2026-10-11T16:08:26.574Z
+Stopped at: Completed 261011-p2z-PLAN.md
 Resume file: None
