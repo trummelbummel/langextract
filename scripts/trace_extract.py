@@ -649,7 +649,10 @@ def print_stage_records(
     for i, record in enumerate(by_label[label]):
       if label == 'chunk':
         _print_block('##########', record.in_data)
-        _print_block('*******', record.out_data)
+        out_data = dict(record.out_data)
+        document_id = out_data.pop('document_id', None)
+        _print_block('*******', out_data)
+        _print_block('%%%%%%', {'document_id': document_id})
       else:
         _print_block('in', record.in_data)
         if label == 'parse' and not record.out_data['extractions']:

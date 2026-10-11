@@ -396,6 +396,49 @@ class TraceExtractWrapperTest(parameterized.TestCase):
     self.assertNotIn("##########:", lines)
     self.assertNotIn("*******:", lines)
 
+  def test_print_stage_records_chunk_marks_document_id_with_percent_run(self):
+    chunk = self.trace.StageRecord(
+        "chunk",
+        {"text_or_documents": "doc text"},
+        {"chunk_text": "chunk body", "document_id": "doc-42"},
+    )
+
+    printed = self._print_records([chunk])
+    lines = printed.splitlines()
+
+    self.assertIn("%%%%%%:", lines)
+    percent_at = lines.index("%%%%%%:")
+    self.assertTrue(
+        any("doc-42" in line for line in lines[percent_at : percent_at + 3])
+    )
+    star_at = lines.index("*******:")
+    next_title = next(
+        (
+            i
+            for i, line in enumerate(lines)
+            if i > star_at and line.endswith(":") and not line.startswith(" ")
+        ),
+        len(lines),
+    )
+    out_block = lines[star_at:next_title]
+    self.assertFalse(any("document_id" in line for line in out_block))
+
+  def test_print_stage_records_chunk_marks_none_document_id(self):
+    chunk = self.trace.StageRecord(
+        "chunk",
+        {"text_or_documents": "doc text"},
+        {"chunk_text": "chunk body", "document_id": None},
+    )
+
+    printed = self._print_records([chunk])
+    lines = printed.splitlines()
+
+    self.assertIn("%%%%%%:", lines)
+    percent_at = lines.index("%%%%%%:")
+    self.assertTrue(
+        any("None" in line for line in lines[percent_at : percent_at + 3])
+    )
+
   def test_model_wrapper_redacts_forwarded_kwargs(self):
     def original(self, batch_prompts, **kwargs):
       yield [core_types.ScoredOutput(score=1.0, output="text")]
