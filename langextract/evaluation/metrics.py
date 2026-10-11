@@ -16,11 +16,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 import dataclasses
 
 __all__ = [
     "ClassScore",
+    "EvaluationReport",
     "prf_from_counts",
+    "report_from_counts",
 ]
 
 
@@ -51,4 +54,31 @@ def prf_from_counts(tp: int, fp: int, fn: int) -> ClassScore:
   )
   return ClassScore(
       precision=precision, recall=recall, f1=f1, tp=tp, fp=fp, fn=fn
+  )
+
+
+@dataclasses.dataclass
+class EvaluationReport:
+  """Per-class and micro-averaged scores from gold-set evaluation."""
+
+  per_class: dict[str, ClassScore]
+  micro: ClassScore
+
+
+def report_from_counts(
+    per_class_counts: Mapping[str, tuple[int, int, int]],
+    micro: tuple[int, int, int],
+) -> EvaluationReport:
+  """Build an EvaluationReport from per-class and micro TP/FP/FN triples.
+
+  Micro is computed from the global micro triple via prf_from_counts (not a
+  mean of per-class F1). Per-class keys are sorted alphabetically.
+  """
+  per_class = {
+      name: prf_from_counts(tp, fp, fn)
+      for name, (tp, fp, fn) in sorted(per_class_counts.items())
+  }
+  return EvaluationReport(
+      per_class=per_class,
+      micro=prf_from_counts(*micro),
   )

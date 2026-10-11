@@ -17,9 +17,13 @@
 from __future__ import annotations
 
 from langextract.evaluation.metrics import ClassScore
+from langextract.evaluation.metrics import EvaluationReport
 from langextract.evaluation.metrics import prf_from_counts
+from langextract.evaluation.metrics import report_from_counts
 
 __all__ = [
     "ClassScore",
+    "EvaluationReport",
     "prf_from_counts",
+    "report_from_counts",
 ]
