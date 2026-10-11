@@ -26,6 +26,7 @@
   - [*Romeo and Juliet* Full Text Extraction](#romeo-and-juliet-full-text-extraction)
   - [Medication Extraction](#medication-extraction)
   - [Radiology Report Structuring: RadExtract](#radiology-report-structuring-radextract)
+  - [Gold-set evaluation](#gold-set-evaluation)
 - [Community Providers](#community-providers)
 - [Contributing](#contributing)
 - [Testing](#testing)
@@ -430,6 +431,14 @@ LangExtract excels at extracting structured medical information from clinical te
 Explore RadExtract, a live interactive demo on HuggingFace Spaces that shows how LangExtract can automatically structure radiology reports. Try it directly in your browser with no setup required.
 
 **[View RadExtract Demo →](https://google-radextract.hf.space/)**
+
+### Gold-set evaluation
+
+Score predicted extractions against a labeled gold set in CI with
+`lx.evaluation.evaluate`—no live models required. The short example asserts
+micro F1 on an in-memory predicted/gold pair.
+
+**[View Gold-set Evaluation CI Example →](https://github.com/google/langextract/blob/main/docs/examples/evaluation_ci.md)**
 
 ## Community Providers
 
