@@ -28,6 +28,7 @@ from langextract import data
 from langextract import prompting
 from langextract import resolver
 import langextract as lx
+from langextract.core import tokenizer as tokenizer_lib
 from langextract.core import types as core_types
 from langextract.providers import ollama
 
@@ -385,7 +386,11 @@ class TraceExtractWrapperTest(absltest.TestCase):
     )
     wrappers = self.trace.make_stage_wrappers(self.sink, self.config)
     _patch_stages(self, wrappers, ["chunk"])
-    chunk_iter = chunking.ChunkIterator(text=_SOURCE_TEXT, max_char_buffer=1000)
+    chunk_iter = chunking.ChunkIterator(
+        text=_SOURCE_TEXT,
+        max_char_buffer=1000,
+        tokenizer_impl=tokenizer_lib.RegexTokenizer(),
+    )
 
     chunks = list(iter(chunk_iter))
 

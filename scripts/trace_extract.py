@@ -220,6 +220,83 @@ def make_model_wrapper(
   return wrap
 
 
+def make_chunk_wrapper(
+    sink: list[StageRecord],
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+  """Build an original -> replacement wrapper for ChunkIterator.__iter__.
+
+  ChunkIterator.__iter__ returns self, so the replacement drives the result
+  with next(); a for-in or yield-from would re-enter the patched __iter__.
+
+  :param sink: Caller-owned list that receives StageRecords.
+  :return: wrap(original) returning the replacement callable.
+  """
+
+  def wrap(original: Callable[..., Any]) -> Callable[..., Any]:
+    @functools.wraps(original)
+    def traced_iter(self, *args, **kwargs):
+      it = original(self, *args, **kwargs)
+      in_data = {
+          'max_char_buffer': self.max_char_buffer,
+          'document_text': self.tokenized_text.text,
+      }
+      while True:
+        try:
+          chunk = next(it)
+        except StopIteration:
+          return
+        out_data = {
+            'chunk_text': chunk.chunk_text,
+            'char_interval': (
+                chunk.char_interval.start_pos,
+                chunk.char_interval.end_pos,
+            ),
+            'token_interval': (
+                chunk.token_interval.start_index,
+                chunk.token_interval.end_index,
+            ),
+            'document_id': getattr(chunk, 'document_id', None),
+        }
+        sink.append(StageRecord('chunk', in_data, out_data))
+        yield chunk
+
+    return traced_iter
+
+  return wrap
+
+
+def make_prompt_wrapper(
+    sink: list[StageRecord],
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+  """Build an original -> replacement wrapper for build_prompt.
+
+  The original runs exactly once (it updates the builder's previous-chunk
+  state) and its prompt string is returned unchanged.
+
+  :param sink: Caller-owned list that receives StageRecords.
+  :return: wrap(original) returning the replacement callable.
+  """
+
+  def wrap(original: Callable[..., Any]) -> Callable[..., Any]:
+    @functools.wraps(original)
+    def traced_build_prompt(self, *args, **kwargs):
+      bound = inspect.signature(original).bind(self, *args, **kwargs)
+      bound.apply_defaults()
+      prompt = original(self, *args, **kwargs)
+      in_data = {
+          'chunk_text': bound.arguments['chunk_text'],
+          'document_id': bound.arguments['document_id'],
+          'additional_context': bound.arguments['additional_context'],
+          'context_window_chars': getattr(self, '_context_window_chars', None),
+      }
+      sink.append(StageRecord('prompt', in_data, {'prompt': prompt}))
+      return prompt
+
+    return traced_build_prompt
+
+  return wrap
+
+
 def make_stage_wrappers(
     sink: list[StageRecord], config: Mapping[str, Any]
 ) -> dict[str, Callable[[Callable[..., Any]], Callable[..., Any]]]:
@@ -229,7 +306,11 @@ def make_stage_wrappers(
   :param config: Config mapping providing redact_keys.
   :return: Wrapper factories keyed by stage label.
   """
-  return {'model': make_model_wrapper(sink, config['redact_keys'])}
+  return {
+      'chunk': make_chunk_wrapper(sink),
+      'prompt': make_prompt_wrapper(sink),
+      'model': make_model_wrapper(sink, config['redact_keys']),
+  }
 
 
 def _print_block(title: str, payload: Mapping[str, Any]) -> None:
