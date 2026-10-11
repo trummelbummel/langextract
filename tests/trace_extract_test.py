@@ -372,6 +372,30 @@ class TraceExtractWrapperTest(parameterized.TestCase):
     self.assertLess(printed.index("[chunk]"), printed.index("[model]"))
     self.assertNotIn("[prompt]", printed)
 
+  def test_print_stage_records_chunk_uses_hash_and_star_block_titles(self):
+    chunk = self.trace.StageRecord(
+        "chunk",
+        {"text_or_documents": "doc text"},
+        {"chunk_text": "chunk body"},
+    )
+
+    printed = self._print_records([chunk])
+    lines = printed.splitlines()
+
+    self.assertIn("##########:", lines)
+    self.assertIn("*******:", lines)
+    self.assertNotIn("in:", lines)
+    self.assertNotIn("out:", lines)
+
+  def test_print_stage_records_model_still_uses_in_out_titles(self):
+    printed = self._print_records([self._model_record("x")])
+    lines = printed.splitlines()
+
+    self.assertIn("in:", lines)
+    self.assertIn("out:", lines)
+    self.assertNotIn("##########:", lines)
+    self.assertNotIn("*******:", lines)
+
   def test_model_wrapper_redacts_forwarded_kwargs(self):
     def original(self, batch_prompts, **kwargs):
       yield [core_types.ScoredOutput(score=1.0, output="text")]

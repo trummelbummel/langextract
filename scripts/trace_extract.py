@@ -647,15 +647,19 @@ def print_stage_records(
     printed_any = True
     print(f'[{label}] {function_name} — {path}')
     for i, record in enumerate(by_label[label]):
-      _print_block('in', record.in_data)
-      if label == 'parse' and not record.out_data['extractions']:
-        print(_parse_callout(record.out_data['parse_error'], config))
-      _print_block('out', record.out_data)
-      if label == 'align':
-        parses = by_label.get('parse', [])
-        _print_align_section(
-            record, parses[i] if i < len(parses) else None, config
-        )
+      if label == 'chunk':
+        _print_block('##########', record.in_data)
+        _print_block('*******', record.out_data)
+      else:
+        _print_block('in', record.in_data)
+        if label == 'parse' and not record.out_data['extractions']:
+          print(_parse_callout(record.out_data['parse_error'], config))
+        _print_block('out', record.out_data)
+        if label == 'align':
+          parses = by_label.get('parse', [])
+          _print_align_section(
+              record, parses[i] if i < len(parses) else None, config
+          )
 
 
 def _copy_attributes(
