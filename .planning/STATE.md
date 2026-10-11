@@ -4,18 +4,18 @@ milestone: v1.0
 milestone_name: MVP
 current_phase: 07
 current_phase_name: gold-set-evaluation-metrics
-current_plan: 4
+current_plan: 5
 status: executing
-stopped_at: Completed 07-03-PLAN.md
-last_updated: "2026-10-11T18:29:15.020Z"
+stopped_at: Completed 07-04-PLAN.md
+last_updated: "2026-10-11T18:40:01.067Z"
 last_activity: 2026-10-11
 last_activity_desc: Phase 05 execution started
-state_head: b97246361126f4afad4bc00a0c674ea79156792d
+state_head: 0a6da7f97c1cda74c0b6f3b2bf86cc2013cdb57d
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 16
-  completed_plans: 14
+  completed_plans: 15
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-11)
 ## Current Position
 
 Phase: 07 (gold-set-evaluation-metrics) — READY TO EXECUTE
-Current Plan: 4
+Current Plan: 5
 Total Plans in Phase: 5
 Status: Ready to execute
 Last activity: 2026-10-11 - Completed quick task 261011-p2z: drop_ungrounded opt-in on lx.extract()
@@ -81,6 +81,7 @@ Progress: [███████░░░] 67%
 | Phase 07 P01 | 2min | 2 tasks | 4 files |
 | Phase 07 P02 | 2min | 2 tasks | 4 files |
 | Phase 07 P03 | 4min | 2 tasks | 3 files |
+| Phase 07 P04 | 2min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -124,6 +125,8 @@ Recent decisions affecting current work:
 - [Phase 07]: TextMatch requires text_eval_func: Callable[[str, str], bool]
 - [Phase 07]: Sort key exactly (-score, pred_index, gold_index); lower indices win IoU ties
 - [Phase 07]: Default score_fn=span_iou; criteria failure omits pair even if IoU high
+- [Phase 07]: evaluate pairs by document_id then greedy_match; TP/FP from pred class, FN from gold
+- [Phase 07]: criteria= XOR non-default convenience flags; lazy lx.evaluation only (no top-level evaluate)
 
 ### Roadmap Evolution
 
@@ -156,6 +159,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-11T18:29:15.003Z
-Stopped at: Completed 07-03-PLAN.md
+Last session: 2026-10-11T18:40:01.048Z
+Stopped at: Completed 07-04-PLAN.md
 Resume file: None
