@@ -14,6 +14,7 @@
 
 """Tests for drop_ungrounded on lx.extract()."""
 
+import logging
 from unittest import mock
 
 from absl.testing import absltest
@@ -183,8 +184,6 @@ class ExtractDropUngroundedTest(absltest.TestCase):
     with self.assertLogs(level="INFO") as logs:
       # Force at least one INFO so assertLogs does not fail when nothing is
       # emitted by drop_ungrounded.
-      import logging
-
       logging.getLogger().info("probe")
       self._extract_text(drop_ungrounded=True)
 
