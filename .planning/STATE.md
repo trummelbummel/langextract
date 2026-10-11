@@ -23,10 +23,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-09)
+See: .planning/PROJECT.md (updated 2026-10-11)
 
 **Core value:** You can follow one `lx.extract()` call from the prompt through to an `AnnotatedDocument` and see which function owns each stage.
-**Current focus:** Phase 03 — Call-scoped probe manager
+**Current focus:** Phase 04 — Stage wrappers (finish deferred 04-03 Task 2: `trace_probes` integration)
 
 ## Current Position
 
@@ -121,6 +121,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-11T06:46:12.296Z
-Stopped at: Phase 03 complete, ready to plan Phase 04
+Last session: 2026-10-11
+Stopped at: Phase 03 complete; Phase 04 plans exist with deferred 04-03 Task 2 (trace_probes) now unblocked
 Resume file: None

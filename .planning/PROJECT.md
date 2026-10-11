@@ -58,6 +58,10 @@ The codebase map in `.planning/codebase/` (refreshed 2026-10-09) is the referenc
 | First milestone is only the script | Later library changes wait until one is named | — Pending |
 | Local Ollama `gemma3:4b` | The model is already available locally; the existing Ollama demo targets a different model and a different output | Configured in `config.yaml` (Phase 1); live call in later phase |
 | Repo-root `config.yaml` for call constants / empty-parse / redact keys | Keeps script knobs out of the library and demo | Shipped Phase 1 |
+| Call-scoped `trace_probes()` with class-attribute assign/restore (no `mock.patch` in script) | Observation must not leak across calls; `finally` restore is the hard gate before live Ollama | Shipped Phase 3 |
+| Chunk identity returns the iterator object; model/align use `yield from` | `ChunkIterator.__iter__` returns `self` — yield-from would recurse | Shipped Phase 3 |
+| Optional `wrappers=` map keyed by catalog labels; unknown keys → `ValueError` | Phase 4 `make_stage_wrappers` contract; partial maps fill with identity | Shipped Phase 3 |
+| In-script restore self-check after catalog (silent / stderr + exit 1) | Proves exception-path restore on every catalog run without calling `lx.extract` | Shipped Phase 3 |
 
 ## Evolution
 
@@ -77,4 +81,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-10 after Phase 1*
+*Last updated: 2026-10-11 after Phase 3*
