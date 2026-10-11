@@ -177,7 +177,7 @@ Plans:
   - Layering: evaluation imports `core.data` only; core never imports evaluation
   - Suggested plan split (≤150 non-test lines each): (1) metrics (2) criteria + span_iou (3) greedy_match (4) evaluate + doc pairing + docs example + e2e
 
-**Plans:** 2/5 plans executed
+**Plans:** 3/5 plans executed
 
 Plans:
 
@@ -191,7 +191,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2)*
 
-- [ ] 07-03-PLAN.md — greedy_match 1:1 with IoU-desc deterministic tie-break
+- [x] 07-03-PLAN.md — greedy_match 1:1 with IoU-desc deterministic tie-break
 
 **Wave 4** *(blocked on Wave 3)*
 
@@ -211,7 +211,7 @@ Plans:
 | 4. Stage wrappers | 3/3 | Complete    | 2026-10-11 |
 | 5. Live extract & Ollama preflight | 2/2 | In Progress|  |
 | 6. AnnotatedDocument & walkthrough close | 0/TBD | Not started | - |
-| 7. Gold-set evaluation metrics | 2/5 | In Progress|  |
+| 7. Gold-set evaluation metrics | 3/5 | In Progress|  |
 
 ## Coverage map
 

@@ -4,18 +4,18 @@ milestone: v1.0
 milestone_name: MVP
 current_phase: 07
 current_phase_name: gold-set-evaluation-metrics
-current_plan: 3
+current_plan: 4
 status: executing
-stopped_at: Completed 07-02-PLAN.md
-last_updated: "2026-10-11T18:12:47.751Z"
+stopped_at: Completed 07-03-PLAN.md
+last_updated: "2026-10-11T18:29:15.020Z"
 last_activity: 2026-10-11
 last_activity_desc: Phase 05 execution started
-state_head: 7fe0ef164e3c2c5faaf7d3615303d521f6e31cd8
+state_head: b97246361126f4afad4bc00a0c674ea79156792d
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 16
-  completed_plans: 13
+  completed_plans: 14
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-11)
 ## Current Position
 
 Phase: 07 (gold-set-evaluation-metrics) — READY TO EXECUTE
-Current Plan: 3
+Current Plan: 4
 Total Plans in Phase: 5
 Status: Ready to execute
 Last activity: 2026-10-11 - Completed quick task 261011-p2z: drop_ungrounded opt-in on lx.extract()
@@ -80,6 +80,7 @@ Progress: [███████░░░] 67%
 | Phase 261011-d60 P01 | 2min | 2 tasks | 2 files |
 | Phase 07 P01 | 2min | 2 tasks | 4 files |
 | Phase 07 P02 | 2min | 2 tasks | 4 files |
+| Phase 07 P03 | 4min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -121,6 +122,8 @@ Recent decisions affecting current work:
 - [Phase 07]: span_iou uses half-open exclusive end_pos; end < start → 0.0
 - [Phase 07]: SpanIoU matches with >= threshold (default 0.5)
 - [Phase 07]: TextMatch requires text_eval_func: Callable[[str, str], bool]
+- [Phase 07]: Sort key exactly (-score, pred_index, gold_index); lower indices win IoU ties
+- [Phase 07]: Default score_fn=span_iou; criteria failure omits pair even if IoU high
 
 ### Roadmap Evolution
 
@@ -153,6 +156,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-11T18:12:47.726Z
-Stopped at: Completed 07-02-PLAN.md
+Last session: 2026-10-11T18:29:15.003Z
+Stopped at: Completed 07-03-PLAN.md
 Resume file: None
