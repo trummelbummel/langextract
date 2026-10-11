@@ -1146,6 +1146,22 @@ class TraceExtractDocumentTest(absltest.TestCase):
     self.assertStartsWith(err.getvalue(), "Error:")
     self.assertIn(str(missing.resolve()), err.getvalue())
 
+  def test_extract_kwargs_includes_chunk_buffer_from_config(self):
+    config = self._config_with_doc("short")
+    config["max_char_buffer"] = 2500
+    config["context_window_chars"] = 120
+    kwargs = self.trace._extract_kwargs(config)
+    self.assertEqual(kwargs["max_char_buffer"], 2500)
+    self.assertEqual(kwargs["context_window_chars"], 120)
+
+  def test_extract_kwargs_passes_null_context_window_chars(self):
+    config = self._config_with_doc("short")
+    config["max_char_buffer"] = 1000
+    config["context_window_chars"] = None
+    kwargs = self.trace._extract_kwargs(config)
+    self.assertIn("context_window_chars", kwargs)
+    self.assertIsNone(kwargs["context_window_chars"])
+
 
 class TraceExtractLiveTest(absltest.TestCase):
   """Live path against a local stub Ollama server (Phase 5)."""

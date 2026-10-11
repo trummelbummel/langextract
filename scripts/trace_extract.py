@@ -934,6 +934,8 @@ def _extract_kwargs(config: Mapping[str, Any]) -> dict[str, Any]:
       'examples': examples,
       'model_id': config['model_id'],
       'model_url': config['model_url'],
+      'max_char_buffer': config['max_char_buffer'],
+      'context_window_chars': config['context_window_chars'],
       'resolver_params': {'format_handler': ollama.OLLAMA_FORMAT_HANDLER},
       'language_model_params': {'timeout': config['request_timeout_s']},
       'extraction_passes': 1,
