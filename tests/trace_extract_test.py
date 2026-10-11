@@ -871,6 +871,100 @@ class TraceExtractProbeTest(absltest.TestCase):
         list(_STAGE_TARGETS),
     )
 
+  def test_trace_probes_partial_wrappers_overlay_and_restore(self):
+    originals = self._originals()
+    sentinel = object()
+
+    def custom_factory(original):
+      del original
+
+      def sentinel_call(self, *args, **kwargs):
+        del self, args, kwargs
+        return sentinel
+
+      return sentinel_call
+
+    with self.trace.trace_probes(wrappers={"parse": custom_factory}):
+      parse_cls, parse_attr = _STAGE_TARGETS["parse"]
+      self.assertIs(getattr(parse_cls, parse_attr)(None), sentinel)
+      for label, (cls, attr) in _STAGE_TARGETS.items():
+        if label == "parse":
+          continue
+        self.assertIsNot(
+            getattr(cls, attr),
+            originals[label],
+            msg=f"{label} should be identity-wrapped",
+        )
+    for label, (cls, attr) in _STAGE_TARGETS.items():
+      self.assertIs(
+          getattr(cls, attr),
+          originals[label],
+          msg=f"{label} should be restored",
+      )
+
+  def test_trace_probes_empty_wrappers_installs_identity(self):
+    originals = self._originals()
+    with self.trace.trace_probes(wrappers={}):
+      for label, (cls, attr) in _STAGE_TARGETS.items():
+        self.assertIsNot(
+            getattr(cls, attr),
+            originals[label],
+            msg=f"{label} should be wrapped under wrappers={{}}",
+        )
+    for label, (cls, attr) in _STAGE_TARGETS.items():
+      self.assertIs(getattr(cls, attr), originals[label])
+
+  def test_trace_probes_generator_and_chunk_identity_shapes(self):
+    pull_counts = {"model": 0, "align": 0}
+
+    def make_counting_gen(label):
+      def original(self, *args, **kwargs):
+        del self, args, kwargs
+        pull_counts[label] += 1
+        yield "a"
+        pull_counts[label] += 1
+        yield "b"
+
+      return original
+
+    chunk_token = object()
+
+    def chunk_original(self, *args, **kwargs):
+      del self, args, kwargs
+      return chunk_token
+
+    model_cls, model_attr = _STAGE_TARGETS["model"]
+    align_cls, align_attr = _STAGE_TARGETS["align"]
+    chunk_cls, chunk_attr = _STAGE_TARGETS["chunk"]
+    self.enter_context(
+        mock.patch.object(model_cls, model_attr, make_counting_gen("model"))
+    )
+    self.enter_context(
+        mock.patch.object(align_cls, align_attr, make_counting_gen("align"))
+    )
+    self.enter_context(mock.patch.object(chunk_cls, chunk_attr, chunk_original))
+
+    with self.trace.trace_probes():
+      model_gen = getattr(model_cls, model_attr)(None)
+      self.assertEqual(pull_counts["model"], 0)
+      self.assertEqual(next(model_gen), "a")
+      self.assertEqual(pull_counts["model"], 1)
+      self.assertEqual(next(model_gen), "b")
+      self.assertEqual(pull_counts["model"], 2)
+
+      align_gen = getattr(align_cls, align_attr)(None)
+      self.assertEqual(pull_counts["align"], 0)
+      self.assertEqual(list(align_gen), ["a", "b"])
+      self.assertEqual(pull_counts["align"], 2)
+
+      chunk_result = getattr(chunk_cls, chunk_attr)(None)
+      self.assertIs(chunk_result, chunk_token)
+
+  def test_trace_probes_rejects_unknown_wrapper_keys(self):
+    with self.assertRaisesRegex(ValueError, r"unknown.*wrapper"):
+      with self.trace.trace_probes(wrappers={"not-a-stage": lambda o: o}):
+        pass
+
 
 if __name__ == "__main__":
   absltest.main()
