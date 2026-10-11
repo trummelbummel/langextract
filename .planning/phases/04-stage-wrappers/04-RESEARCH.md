@@ -348,14 +348,12 @@ See Patterns 1–7 above. Offline verification harness used for this research: `
 | A5 | Importing `langextract` in the script (for class references) is acceptable for Phase 3/4 | Pitfall 10 | Low: Phase 2's "no import" criterion was plan-local; Phase 3 must still choose lazy vs top-level |
 | A6 | Single-chunk v1: chunk records for a batch appear before that batch's prompts (extract default `batch_length=10`); correlating multi-chunk records is out of scope (STG-10) | Data flow | Low for v1; revisit with STG-10 |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Phase 3 wrapper-callable contract**
-   - Known: `trace_probes(wrappers={...})`, identity default, transparent yields, restore in `finally`. Undecided: key names, whether values are `original -> replacement` or already-bound replacements, install-failure and re-entry behavior.
-   - Recommendation: before planning Phase 4, settle in the Phase 3 plan: keys = catalog labels, values = `original -> replacement` (A1). Phase 4 wrapper factories and unit tests do not depend on it; only the integration test through `trace_probes` does, so schedule that task in a later wave than Phase 3.
-2. **Does Phase 3 import `langextract` at module top?** Affects `python scripts/trace_extract.py` startup and the Phase 2 "no import" assertion. Recommendation: lazy import inside `trace_probes`.
-3. **Empty-parse wording (A3).** If the plan chooses the truthful two-message callout, add `empty_list_message` to `config.yaml` (D-10) and keep `empty_parse_message` for the error case.
-4. **How much of `kwargs` to print on `[model]`.** FEATURES.md says to leave sampling kwargs out; the only forwarded kwarg in this path is `max_workers`. Recommendation: print redacted kwargs (cheap forwarding proof) or omit — planner's call.
+1. **Phase 3 wrapper-callable contract** — RESOLVED for Phase 4 planning (A1): keys = catalog labels `chunk/prompt/model/parse/align`; values = `original -> replacement`. Plans 04-01–04-02 and 04-03 Task 1 unit/integration-test via `mock.patch.object`; only 04-03 Task 2 needs `trace_probes` and may add a ≤10-line adapter if Phase 3 differs.
+2. **Does Phase 3 import `langextract` at module top?** — RESOLVED for Phase 4 script: wrappers stay in `scripts/trace_extract.py` with **no** top-level `langextract` import (Phase 2 assertion preserved). Lazy import inside `trace_probes` remains Phase 3's call.
+3. **Empty-parse wording (A3).** — RESOLVED in 04-02: truthful two-message callout; add `empty_list_message` to `config.yaml`; keep `empty_parse_message` for swallowed-error case; re-run original `resolve` with `suppress_parse_errors=False` when result is `[]`.
+4. **How much of `kwargs` to print on `[model]`.** — RESOLVED in 04-01: print redacted kwargs via existing `redact(..., keys=)` (forwarding proof); sampling kwargs remain out of FEATURES scope.
 
 ## Environment Availability
 
