@@ -21,11 +21,14 @@ No phase `07-CONTEXT.md` (user continued without discuss-phase). Treat ROADMAP P
 
 ### Claude's Discretion
 - Exact `EvaluationReport` / per-class dataclass field names
-- Behavior when predicted/gold `document_id` sets differ (raise vs score unpaired as FP/FN)
-- Whether to expose top-level `lx.evaluate` vs lazy `lx.evaluation.evaluate` only
 - Zero-division convention when TP=FP=FN=0
-- README placement (new subsection vs `docs/examples/`)
 - Deterministic tie-break key details beyond “IoU desc”
+
+### Resolved (was discretion; locked by plans)
+- Unpaired `document_id` sets → `ValueError` listing missing IDs (identical sets required)
+- `extractions is None` → empty list
+- Docs: `docs/examples/evaluation_ci.md` + README More Examples link (07-05)
+- Lazy `lx.evaluation` only — no top-level `lx.evaluate`
 
 ### Deferred Ideas (OUT OF SCOPE)
 - Practice Task 1/2/4/5 (drop_ungrounded already done separately; summarize/observers/fallback providers)
@@ -136,7 +139,7 @@ predicted: Sequence[AnnotatedDocument]     gold: Sequence[AnnotatedDocument]
      EvaluationReport { per_class, micro: {precision, recall, f1, ...} }
 ```
 
-\* Document-ID mismatch policy is Claude's discretion — see Open Questions; recommend raise on set mismatch for CI clarity.
+\* Document-ID mismatch policy: RESOLVED — require identical ID sets; raise ValueError listing missing IDs (see Open Questions).
 
 ### Recommended Project Structure
 ```
@@ -344,25 +347,24 @@ If plan 04 exceeds budget: Task A = `evaluate` + pairing + packaging; Task B = d
 | # | Claim | Section | Risk if Wrong |
 |---|-------|---------|---------------|
 | A1 | Empty both sides → P=R=F1=0.0 | Hand-worked / Pitfall 5 | CI example expectations flip; need user confirm |
-| A2 | Mismatched document_id sets should raise `ValueError` | Open Questions | Alternate FP/FN-for-unpaired changes EVAL-01 pairing semantics |
+| A2 | Mismatched document_id sets should raise `ValueError` | Open Questions (RESOLVED) | Alternate FP/FN-for-unpaired changes EVAL-01 pairing semantics |
 | A3 | Default `iou_threshold=0.5` on `evaluate` / `SpanIoU` | EVAL-02 | REQUIREMENTS says 0.5; confirm kwarg name `iou_threshold` |
-| A4 | No top-level `lx.evaluate` in v1 — lazy submodule only | Exports | Docs ergonomics only |
+| A4 | No top-level `lx.evaluate` in v1 — lazy submodule only | Exports (RESOLVED) | Docs ergonomics only |
 | A5 | `AttributesEqual` uses `==` on `attributes` dicts (including `None`) | Criteria | Nested list order sensitivity |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Unpaired `document_id`s**
+1. **Unpaired `document_id`s** — RESOLVED: require identical predicted/gold ID sets; raise `ValueError` listing IDs missing from either side (adopted in 07-04; RESEARCH A2).
    - What we know: ROADMAP requires pairing by `document_id`; annotation raises on duplicate IDs within a stream.
-   - What's unclear: predicted-only or gold-only docs.
-   - Recommendation: require identical ID sets; raise `ValueError` listing missing IDs (simplest CI story).
+   - Adopted answer: identical sets required; unpaired IDs are errors, not FP/FN.
 
-2. **`extractions is None`**
+2. **`extractions is None`** — RESOLVED: treat as empty list (`doc.extractions or []`) when pairing and matching (adopted in 07-04).
    - What we know: field type is `list[Extraction] | None` [VERIFIED: `langextract/core/data.py:217`].
-   - Recommendation: treat as empty list.
 
-3. **Docs location**
+3. **Docs location** — RESOLVED: `docs/examples/evaluation_ci.md` plus a README More Examples link (plan 07-05).
    - What we know: README has Quick Start + More Examples; `docs/examples/` holds longer guides.
-   - Recommendation: short CI snippet under README **More Examples** (new “Gold-set evaluation” bullet) *or* 15-line `docs/examples/evaluation_ci.md` linked from README — keep README change tiny for diff budget.
+
+Also locked (exports): no top-level `lx.evaluate`; lazy `lx.evaluation` only (A4 / 07-04).
 
 ## Environment Availability
 
