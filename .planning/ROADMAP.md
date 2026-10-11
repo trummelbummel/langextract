@@ -7,6 +7,7 @@ Build `scripts/trace_extract.py` — a one-call printed walkthrough of `lx.extra
 ## Milestones
 
 - 🚧 **v1.0 MVP** — Script-only pipeline trace (Phases 1–6)
+- 📋 **Practice / library** — Gold-set evaluation (Phase 7); independent of the trace script
 
 ## Phases
 
@@ -16,6 +17,7 @@ Build `scripts/trace_extract.py` — a one-call printed walkthrough of `lx.extra
 - [x] **Phase 4: Stage wrappers** - Capture chunk → prompt → infer → resolve → align with live in/out records (completed 2026-10-11)
 - [ ] **Phase 5: Live extract & Ollama preflight** - One `lx.extract()` against `gemma3:4b` with clear preflight failure
 - [ ] **Phase 6: AnnotatedDocument & walkthrough close** - Print the returned document and verify the full stage dump
+- [ ] **Phase 7: Gold-set evaluation metrics** - `evaluate(predicted, gold)` with IoU matching, greedy 1:1, P/R/F1 per class + micro
 
 ## Phase Details
 
@@ -153,6 +155,52 @@ Plans:
 
 **Plans:** TBD
 
+### Phase 7: Gold-set evaluation metrics
+
+**Goal:** As a library user, I want `evaluate(predicted, gold)` that scores extractions against a labeled gold set (class + span IoU, optional attributes/text, greedy one-to-one matching) and returns per-class and micro precision/recall/F1, so I can run a CI regression check without a custom eval harness.
+**Depends on:** Nothing (library feature; independent of Phases 5–6)
+**Requirements:** EVAL-01, EVAL-02, EVAL-03, EVAL-04
+**Success Criteria** (what must be TRUE):
+
+  1. `evaluate(predicted, gold, ...)` accepts sequences of `AnnotatedDocument`, pairs docs by `document_id`, and returns an `EvaluationReport` with per-class and micro-averaged precision, recall, and F1
+  2. A prediction matches gold only when all configured criteria pass (at least same class + span IoU ≥ configurable threshold; optional `match_attributes` and optional `text_eval_func`); unmatched predictions with `char_interval is None` count as false positives via IoU 0.0
+  3. Matching is one-to-one greedy (score by IoU desc, deterministic tie-break); one prediction cannot match two gold items
+  4. Tests cover perfect match, overlap below/above threshold, class mismatch, duplicate predictions, empty inputs; metrics assert against hand-worked values
+  5. README (or docs) includes a short CI regression example using `evaluate`
+
+**Design constraints** (from discuss; lock for plan-phase):
+
+  - Package layout (not a single god-class / ABC): `langextract/evaluation/` with `criteria.py`, `matching.py`, `metrics.py`, `__init__.py` (`evaluate` + re-exports)
+  - Match rules are small callables behind a `MatchCriterion` Protocol (`SameClass`, `SpanIoU`, `AttributesEqual`, `TextMatch`); greedy score (`span_iou`) stays separate from yes/no criteria
+  - No `Evaluation` ABC until a second evaluator exists; `text_eval_func` injects via `TextMatch`, not a subclass hook
+  - Convenience flags vs full `criteria=` override: mutually exclusive (one way to configure)
+  - Layering: evaluation imports `core.data` only; core never imports evaluation
+  - Suggested plan split (≤150 non-test lines each): (1) metrics (2) criteria + span_iou (3) greedy_match (4) evaluate + doc pairing + docs example + e2e
+
+**Plans:** 5 plans
+
+Plans:
+
+**Wave 1**
+
+- [ ] 07-01-PLAN.md — Metrics tracer: ClassScore, prf_from_counts, EvaluationReport + hand-worked P/R/F1
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 07-02-PLAN.md — MatchCriterion + span_iou + SameClass/SpanIoU/AttributesEqual/TextMatch
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [ ] 07-03-PLAN.md — greedy_match 1:1 with IoU-desc deterministic tie-break
+
+**Wave 4** *(blocked on Wave 3)*
+
+- [ ] 07-04-PLAN.md — evaluate() + doc pairing + lazy export + e2e hand-worked matrix
+
+**Wave 5** *(blocked on Wave 4)*
+
+- [ ] 07-05-PLAN.md — docs/examples/evaluation_ci.md + README More Examples link
+
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
@@ -163,6 +211,7 @@ Plans:
 | 4. Stage wrappers | 3/3 | Complete    | 2026-10-11 |
 | 5. Live extract & Ollama preflight | 2/2 | In Progress|  |
 | 6. AnnotatedDocument & walkthrough close | 0/TBD | Not started | - |
+| 7. Gold-set evaluation metrics | 0/5 | Not started | - |
 
 ## Coverage map
 
@@ -182,8 +231,12 @@ Plans:
 | STG-09 | Phase 4 |
 | CTR-01 | Phase 1 |
 | CTR-02 | Phase 1 |
+| EVAL-01 | Phase 7 |
+| EVAL-02 | Phase 7 |
+| EVAL-03 | Phase 7 |
+| EVAL-04 | Phase 7 |
 
-**Coverage:** 14/14 v1 requirements mapped ✓
+**Coverage:** 14/14 v1 requirements mapped ✓; 4/4 EVAL (Phase 7) mapped
 
 ## Notes for planning
 
@@ -191,3 +244,4 @@ Plans:
 - Phase 3 has no REQ-ID (restore discipline / Pitfall 7) but is a hard gate before live Ollama.
 - Deeper research at plan time: Phase 4 method signatures/generators; Phase 5 cold-load timeout on this machine.
 - v2 deferred: STG-10 (two-chunk), STG-11 (prompt-validation), STG-12 (WordAligner parameter echo).
+- Phase 7 is library evaluation (practice Task 3); not blocked on finishing the trace MVP. Plan with the four-module split above to stay inside the diff budget.
