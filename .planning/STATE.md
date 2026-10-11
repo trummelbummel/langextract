@@ -4,18 +4,18 @@ milestone: v1.0
 milestone_name: MVP
 current_phase: 05
 current_phase_name: Live extract & Ollama preflight
-current_plan: 2
+current_plan: 1
 status: executing
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-10-11T07:07:16.662Z"
+stopped_at: Completed quick 261011-cst-PLAN.md
+last_updated: "2026-10-11T07:17:56.668Z"
 last_activity: 2026-10-11
-state_head: 90885ee61f2ba2d3c10e9a3fa9253fa5909e7277
+last_activity_desc: Phase 05 execution started
+state_head: d70aa60f7c5a9c5634d0f1abcbd5edc4b2d07aac
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 11
   completed_plans: 10
-last_activity_desc: Phase 4 complete; resumed Phase 05 execution position
 ---
 
 # Project State
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-10-11)
 ## Current Position
 
 Phase: 05 (Live extract & Ollama preflight) — EXECUTING
-Current Plan: 2
+Current Plan: 1
 Total Plans in Phase: 2
-Status: Ready to execute
-Last activity: 2026-10-11
+Status: Executing Phase 05
+Last activity: 2026-10-11 - Completed quick task 261011-cst: make the script read from config the file in filepath data/example_document.md , make the chunking configurable in the config and load it in the script
 
 Progress: [███████░░░] 67%
 
@@ -75,6 +75,7 @@ Progress: [███████░░░] 67%
 | Phase 03 P01 | 4min | 2 tasks | 2 files |
 | Phase 03 P02 | 3min | 2 tasks | 2 files |
 | Phase 05 P01 | 25 min | 2 tasks | 3 files |
+| Phase 261011-cst P01 | 2min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,7 @@ Recent decisions affecting current work:
 - [Phase 03]: Self-check stderr 'Error: probe self-check failed' + SystemExit(1); expected RuntimeError swallowed
 - [Phase 05]: 05-01: preflight matches exact model id or :latest only; non-http(s) model_url rejected before any request
 - [Phase 05]: 05-01: --catalog-only keeps Phase 3 D-09 self-check (not langextract-free); system python lacks yaml so verify with .venv
+- [Phase 05]: Quick 261011-cst: document_path + chunk kwargs from config; CLI document positional removed
 
 ### Pending Todos
 
@@ -114,6 +116,12 @@ None yet.
 
 - Phase 5 needs local Ollama serving `gemma3:4b` (cold-load timeout to validate on this machine)
 - Phase 5 single-inference guard must not rely on `prompt_index == 0` alone (WR-05)
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 261011-cst | make the script read from config the file in filepath data/example_document.md , make the chunking configurable in the config and load it in the script | 2026-10-11 | d70aa60 | [261011-cst-make-the-script-read-from-config-the-fil](./quick/261011-cst-make-the-script-read-from-config-the-fil/) |
 
 ## Deferred Items
 
@@ -125,6 +133,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-11T07:07:16.645Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-10-11T07:17:56.504Z
+Stopped at: Completed quick 261011-cst-PLAN.md
 Resume file: None
