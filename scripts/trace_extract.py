@@ -21,10 +21,14 @@ Usage:
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 import dataclasses
+import functools
+import inspect
 from pathlib import Path
+import pprint
 import sys
+import textwrap
 from typing import Any
 from urllib.parse import urlparse
 
@@ -151,6 +155,126 @@ class ExtractionSnapshot:
   char_interval: tuple[int | None, int | None] | None
   token_interval: tuple[int, int] | None
   alignment_status: str | None
+
+
+@dataclasses.dataclass(frozen=True)
+class StageRecord:
+  """Live data in and out of one pipeline stage (primitives only)."""
+
+  label: str
+  in_data: dict[str, Any]
+  out_data: dict[str, Any]
+
+
+def _safe_text(text: Any) -> str:
+  """Escape control characters; keep newline, tab and printable text."""
+  if text is None:
+    return 'None'
+  return ''.join(
+      ch if ch in '\n\t' or ch.isprintable() else repr(ch)[1:-1]
+      for ch in str(text)
+  )
+
+
+def make_model_wrapper(
+    sink: list[StageRecord], redact_keys: Iterable[str]
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+  """Build an original -> replacement wrapper for OllamaLanguageModel.infer.
+
+  The replacement yields the same items lazily and appends one 'model'
+  record per yielded ScoredOutput. Nothing is parsed or printed here.
+
+  :param sink: Caller-owned list that receives StageRecords.
+  :param redact_keys: Key names redacted in the recorded forwarded kwargs.
+  :return: wrap(original) returning the replacement callable.
+  """
+  keys = list(redact_keys)
+
+  def wrap(original: Callable[..., Any]) -> Callable[..., Any]:
+    @functools.wraps(original)
+    def traced_infer(self, *args, **kwargs):
+      bound = inspect.signature(original).bind(self, *args, **kwargs)
+      prompts = tuple(bound.arguments['batch_prompts'])
+      extra = {k: v for k, v in kwargs.items() if k != 'batch_prompts'}
+      in_data = {
+          'batch_prompts': prompts,
+          'batch_size': len(prompts),
+          'kwargs': redact(extra, keys=keys),
+      }
+
+      def traced_outputs():
+        for index, item in enumerate(original(self, *args, **kwargs)):
+          for scored in item:
+            out_data = {
+                'prompt_index': index,
+                'score': scored.score,
+                'raw_model_text': scored.output,
+            }
+            sink.append(StageRecord('model', in_data, out_data))
+          yield item
+
+      return traced_outputs()
+
+    return traced_infer
+
+  return wrap
+
+
+def make_stage_wrappers(
+    sink: list[StageRecord], config: Mapping[str, Any]
+) -> dict[str, Callable[[Callable[..., Any]], Callable[..., Any]]]:
+  """Map catalog labels to original -> replacement wrapper callables.
+
+  :param sink: Caller-owned list that receives StageRecords.
+  :param config: Config mapping providing redact_keys.
+  :return: Wrapper factories keyed by stage label.
+  """
+  return {'model': make_model_wrapper(sink, config['redact_keys'])}
+
+
+def _print_block(title: str, payload: Mapping[str, Any]) -> None:
+  """Print one in:/out: block; text values pass through _safe_text."""
+  print(f'{title}:')
+  for key, value in payload.items():
+    if isinstance(value, str) and not value:
+      print(f"  {key}: ''")
+    elif isinstance(value, str):
+      print(f'  {key}:')
+      print(textwrap.indent(_safe_text(value), '    '))
+    elif isinstance(value, (list, tuple)) and all(
+        isinstance(v, str) and v for v in value
+    ):
+      print(f'  {key}:')
+      for i, item in enumerate(value):
+        print(f'    [{i}]')
+        print(textwrap.indent(_safe_text(item), '      '))
+    else:
+      print(f'  {key}: {pprint.pformat(value)}')
+
+
+def print_stage_records(
+    records: Iterable[StageRecord], config: Mapping[str, Any]
+) -> None:
+  """Print captured stages in catalog order with in:/out: blocks.
+
+  :param records: Records collected by the stage wrappers, in capture order.
+  :param config: Config mapping; later plans read stage messages from it.
+  """
+  del config  # Read by later plans (empty-parse and offset captions).
+  by_label: dict[str, list[StageRecord]] = {}
+  for record in records:
+    by_label.setdefault(record.label, []).append(record)
+  printed_any = False
+  for label, function_name, path in STAGE_CATALOG:
+    if label not in by_label:
+      continue
+    if printed_any:
+      print()
+    printed_any = True
+    print(f'[{label}] {function_name} — {path}')
+    for record in by_label[label]:
+      _print_block('in', record.in_data)
+      _print_block('out', record.out_data)
 
 
 def _copy_attributes(
