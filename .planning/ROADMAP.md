@@ -92,7 +92,7 @@ Plans:
   3. Align-stage output shows spans, status, chunk offsets (even when 0), and source slice or `ungrounded`
   4. Empty parse is called out in words next to the raw model text, and parse inputs include format/fence/wrapper flags
 
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 **Wave 1**
@@ -101,7 +101,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 04-02-PLAN.md — Parse wrapper with format/fence/wrapper flags; truthful empty-parse callout (empty_list_message)
+- [x] 04-02-PLAN.md — Parse wrapper with format/fence/wrapper flags; truthful empty-parse callout (empty_list_message)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -151,7 +151,7 @@ Plans:
 | 1. Stage catalog & contracts | 2/2 | Complete    | 2026-10-10 |
 | 2. Extraction snapshots | 2/2 | Complete    | 2026-10-10 |
 | 3. Call-scoped probe manager | 0/TBD | Not started | - |
-| 4. Stage wrappers | 1/3 | In Progress|  |
+| 4. Stage wrappers | 2/3 | In Progress|  |
 | 5. Live extract & Ollama preflight | 0/TBD | Not started | - |
 | 6. AnnotatedDocument & walkthrough close | 0/TBD | Not started | - |
 

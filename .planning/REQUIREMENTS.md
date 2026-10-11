@@ -23,7 +23,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **STG-06**: Align stage shows spans, status, chunk offsets (even when 0), and source slice or `ungrounded`
 - [ ] **STG-07**: Final stage prints the `AnnotatedDocument` returned by that `extract()` call
 - [x] **STG-08**: Parse and align are printed as a before/after grounding pair for the same extractions
-- [ ] **STG-09**: Empty parse is called out in words next to the raw model text; parse inputs include format/fence/wrapper flags
+- [x] **STG-09**: Empty parse is called out in words next to the raw model text; parse inputs include format/fence/wrapper flags
 
 ### Contract
 
@@ -74,7 +74,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STG-06 | Phase 4 | Pending |
 | STG-07 | Phase 6 | Pending |
 | STG-08 | Phase 2 | Complete |
-| STG-09 | Phase 4 | Pending |
+| STG-09 | Phase 4 | Complete |
 | CTR-01 | Phase 1 | Complete |
 | CTR-02 | Phase 1 | Complete |
 
