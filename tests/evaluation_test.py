@@ -394,5 +394,60 @@ class GreedyMatchTest(parameterized.TestCase):
     self.assertEqual(second, first)
 
 
+def _annotated_doc(
+    document_id: str,
+    extractions: list[data.Extraction] | None,
+) -> data.AnnotatedDocument:
+  return data.AnnotatedDocument(
+      document_id=document_id, extractions=extractions
+  )
+
+
+class EvaluateTracerTest(parameterized.TestCase):
+  """End-to-end evaluate tracer path (EVAL-01 / A4)."""
+
+  def test_perfect_match_micro_and_per_class_are_one(self):
+    from langextract.evaluation import evaluate
+
+    extraction = _extraction("A", 0, 5)
+    predicted = [_annotated_doc("d1", [extraction])]
+    gold = [_annotated_doc("d1", [_extraction("A", 0, 5)])]
+    report = evaluate(predicted, gold)
+    self.assertEqual(report.micro.precision, 1.0)
+    self.assertEqual(report.micro.recall, 1.0)
+    self.assertEqual(report.micro.f1, 1.0)
+    class_score = report.per_class["A"]
+    self.assertEqual(class_score.precision, 1.0)
+    self.assertEqual(class_score.recall, 1.0)
+    self.assertEqual(class_score.f1, 1.0)
+
+  def test_empty_lists_yield_micro_zeros(self):
+    from langextract.evaluation import evaluate
+
+    report = evaluate([], [])
+    self.assertEqual(report.micro.precision, 0.0)
+    self.assertEqual(report.micro.recall, 0.0)
+    self.assertEqual(report.micro.f1, 0.0)
+    self.assertEqual(report.per_class, {})
+
+  def test_extractions_none_treated_as_empty(self):
+    from langextract.evaluation import evaluate
+
+    predicted = [_annotated_doc("d1", None)]
+    gold = [_annotated_doc("d1", None)]
+    report = evaluate(predicted, gold)
+    self.assertEqual(report.micro.precision, 0.0)
+    self.assertEqual(report.micro.recall, 0.0)
+    self.assertEqual(report.micro.f1, 0.0)
+
+  def test_lazy_lx_evaluation_evaluate_is_same_callable(self):
+    import langextract as lx
+    import langextract.evaluation as evaluation_module
+
+    self.assertTrue(hasattr(lx, "evaluation"))
+    self.assertIs(lx.evaluation.evaluate, evaluation_module.evaluate)
+    self.assertTrue(callable(lx.evaluation.evaluate))
+
+
 if __name__ == "__main__":
   absltest.main()

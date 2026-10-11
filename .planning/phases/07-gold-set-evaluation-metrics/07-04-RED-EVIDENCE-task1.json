@@ -1,0 +1,9 @@
+{
+  "command": ".venv/bin/python tests/evaluation_test.py EvaluateTracerTest",
+  "exitCode": 1,
+  "output": "TAP version 13\nnot ok 1 - test_empty_lists_yield_micro_zeros\nnot ok 2 - test_extractions_none_treated_as_empty\nnot ok 3 - test_lazy_lx_evaluation_evaluate_is_same_callable\nnot ok 4 - test_perfect_match_micro_and_per_class_are_one\n# tests 4\n# pass 0\n# fail 4\n",
+  "targetTest": "test_perfect_match_micro_and_per_class_are_one",
+  "targetFile": "tests/evaluation_test.py",
+  "expected": "evaluate([pred_doc d1 A[0,5)], [gold_doc d1 A[0,5)]) → micro (1.0,1.0,1.0) and per_class[A] (1.0,1.0,1.0)",
+  "actual": "ImportError: cannot import name 'evaluate' from 'langextract.evaluation'"
+}
