@@ -3,19 +3,19 @@ gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: MVP
 current_phase: 03
-current_phase_name: call-scoped-probe-manager
-current_plan: 3
+current_phase_name: Call-scoped probe manager
+current_plan: 2
 status: executing
-stopped_at: Phase 3 context gathered
-last_updated: "2026-10-11T06:18:51.767Z"
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-10-11T06:36:06.692Z"
 last_activity: 2026-10-11
-last_activity_desc: Phase 04 execution resumed (wave continue)
-state_head: cc62fcfb35ac2b0446fd3875d6aada262c908928
+last_activity_desc: Phase 03 execution started
+state_head: 41dcbd103a51d0ba3067c72c7e2b7e172c8920b3
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 11
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -25,15 +25,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-09)
 
 **Core value:** You can follow one `lx.extract()` call from the prompt through to an `AnnotatedDocument` and see which function owns each stage.
-**Current focus:** Phase 04 — Stage workshop
+**Current focus:** Phase 03 — Call-scoped probe manager
 
 ## Current Position
 
-Phase: 03 (call-scoped-probe-manager) — READY TO EXECUTE
-Current Plan: 3
+Phase: 03 (Call-scoped probe manager) — EXECUTING
+Current Plan: 2
 Total Plans in Phase: 2
 Status: Ready to execute
-Last activity: 2026-10-11 — Phase 04 execution resumed (wave continue)
+Last activity: 2026-10-11 — Phase 03 execution started
 
 Progress: [███░░░░░░░] 33%
 
@@ -70,6 +70,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 04 P01 | 6min | 2 tasks | 2 files |
 | Phase 04 P02 | 4 min | 2 tasks | 3 files |
 | Phase 04 P03 | 10 min | 1 tasks | 3 files |
+| Phase 03 P01 | 4min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,9 @@ Recent decisions affecting current work:
 - [Phase 04]: [Phase 04-01]: make_stage_wrappers keys are catalog labels with original->replacement values; model records are one per ScoredOutput with prompt_index (0-based yield position per infer call) and batch_size
 - [Phase 04]: 04-02: parse record = in{raw_model_text,flags,suppress_parse_errors} out{extractions,parse_error}; callout picks empty_parse_message (error str) vs empty_list_message (None) from config
 - [Phase 04]: 04-03: Task 2 (trace_probes walkthrough) deferred; blocked on Phase 3 (trace_probes missing). Align wrapper + [align] printer done via _patch_stages.
+- [Phase 03]: Chunk identity returns original iterator (ChunkIterator.__iter__ returns self)
+- [Phase 03]: Model/align identity use yield from; prompt/parse use return; no functools.wraps
+- [Phase 03]: _PROBE_TARGETS populated lazily so catalog import stays light
 
 ### Pending Todos
 
@@ -112,6 +116,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-11T06:06:20.470Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-call-scoped-probe-manager/03-CONTEXT.md
+Last session: 2026-10-11T06:36:06.675Z
+Stopped at: Completed 03-01-PLAN.md
+Resume file: None
