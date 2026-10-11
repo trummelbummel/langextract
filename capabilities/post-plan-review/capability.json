@@ -1,7 +1,7 @@
 {
   "id": "post-plan-review",
   "role": "feature",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "title": "Post-plan review gate",
   "description": "After each executed plan/wave or gsd-quick task: run style-review, then dedup-review, commit their results, then pause for human commit review (approved or undo) before continuing.",
   "tier": "full",

@@ -104,20 +104,56 @@ Same fallback rules as style-review.
 <step name="4_human_commit_gate" priority="high">
 **Blocking human gate — do not start the next plan or quick task.**
 
+List this id's commits oldest-first:
+
 ```bash
-git log --oneline --grep="{id}" -30
+git log --reverse --format='%h %s' --grep="{id}" -30
 ```
 
-Present:
+1. Open the **combined** diff of all those commits at once in the editor
+   (Cursor, falling back to VS Code): one side-by-side tab per file touched by
+   any of the commits, comparing the state before the oldest commit with the
+   state at the newest commit. Snapshots go to a temp dir so the tabs stay
+   valid after the command exits; a missing side (added/deleted file, root
+   commit) is an empty file:
+
+```bash
+d="${TMPDIR:-/tmp}/gsd-commit-review/{id}"
+rm -rf "$d" && mkdir -p "$d/before" "$d/after"
+git log --reverse --format=%h --grep="{id}" -30 > "$d/commits"
+base=$(head -1 "$d/commits"); tip=$(tail -1 "$d/commits")
+while IFS= read -r h; do
+  git diff-tree --root --no-commit-id -r --name-only "$h"
+done < "$d/commits" | sort -u > "$d/files"
+editor=$(command -v cursor || command -v code)
+while IFS= read -r f; do
+  mkdir -p "$d/before/$(dirname "$f")" "$d/after/$(dirname "$f")"
+  git show "$base^:$f" > "$d/before/$f" 2>/dev/null || : > "$d/before/$f"
+  git show "$tip:$f" > "$d/after/$f" 2>/dev/null || : > "$d/after/$f"
+  [ -n "$editor" ] && "$editor" --reuse-window --diff "$d/before/$f" "$d/after/$f"
+done < "$d/files"
+git diff --stat "$base^" "$tip" -- $(cat "$d/files")
+```
+
+   If commits from other ids landed between `base` and `tip` on the same
+   files, their changes show up too — mention it when the log shows such
+   commits. If neither `cursor` nor `code` is on PATH, say so (Cursor:
+   Command Palette → "Install 'cursor' command", or symlink
+   `/Applications/Cursor.app/Contents/Resources/app/bin/cursor` into PATH)
+   and tell the user to inspect with `git diff {base}^ {tip}` instead.
+
+2. Ask for **one** verdict covering all commits (AskUserQuestion when
+   available; otherwise print and **stop and wait**). Never auto-approve:
 
 ```
 ## Human commit review — {id}
 
-Review these commits in Source Control or:
-  git show <hash>
-  git diff <base>..<tip>
+Commits under review ({total}):
+{hash subject list}
 
-Artifacts:
+{diff stat}
+
+All changed files are open as diffs in the editor. Artifacts:
   {artifact_dir}/{id}-STYLE-REVIEW.md
   {artifact_dir}/{id}-DEDUP-REVIEW.md
 
@@ -126,9 +162,6 @@ Reply with one of:
   - undo         → revert this id's commits (confirm first)
   - <feedback>   → stay halted until approved or undo
 ```
-
-Use AskUserQuestion when available; otherwise print and **stop and wait**.
-Never auto-approve.
 
 If `undo`:
 - **Phase plan id** (`NN-MM`): `/gsd-undo --plan {id}` after confirm.
