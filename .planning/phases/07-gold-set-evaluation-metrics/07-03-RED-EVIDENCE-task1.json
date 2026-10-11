@@ -1,0 +1,9 @@
+{
+  "command": ".venv/bin/python tests/evaluation_test.py GreedyMatchTest",
+  "exitCode": 1,
+  "output": "TAP version 13\nnot ok 1 - test_class_mismatch_yields_empty_matches\nnot ok 2 - test_crossing_iou_prefers_higher_score_pairs\nnot ok 3 - test_duplicate_preds_match_gold_at_most_once\nnot ok 4 - test_perfect_overlap_matches_single_pair\n# tests 4\n# pass 0\n# fail 4\n",
+  "targetTest": "test_perfect_overlap_matches_single_pair",
+  "targetFile": "tests/evaluation_test.py",
+  "expected": "greedy_match([A[0,5)], [A[0,5)], [SameClass(), SpanIoU(0.5)]) → [(0, 0)]",
+  "actual": "ImportError: cannot import name 'greedy_match' from 'langextract.evaluation'"
+}

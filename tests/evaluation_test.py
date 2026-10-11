@@ -310,5 +310,59 @@ class CriteriaOptionalTest(parameterized.TestCase):
     self.assertFalse(TextMatch(lambda a, b: a == b)(pred, gold))
 
 
+def _default_match_criteria():
+  from langextract.evaluation import SameClass
+  from langextract.evaluation import SpanIoU
+
+  return [SameClass(), SpanIoU(0.5)]
+
+
+class GreedyMatchTest(parameterized.TestCase):
+  """Greedy 1:1 matching by IoU-desc + index tie-break (EVAL-03)."""
+
+  def test_perfect_overlap_matches_single_pair(self):
+    from langextract.evaluation import greedy_match
+
+    predicted = [_extraction("A", 0, 5)]
+    gold = [_extraction("A", 0, 5)]
+    self.assertEqual(
+        greedy_match(predicted, gold, _default_match_criteria()),
+        [(0, 0)],
+    )
+
+  def test_duplicate_preds_match_gold_at_most_once(self):
+    from langextract.evaluation import greedy_match
+
+    predicted = [_extraction("A", 0, 5), _extraction("A", 0, 5)]
+    gold = [_extraction("A", 0, 5)]
+    matches = greedy_match(predicted, gold, _default_match_criteria())
+    self.assertEqual(len(matches), 1)
+    self.assertEqual(matches[0][1], 0)
+    matched_pred_indices = {pred_index for pred_index, _ in matches}
+    self.assertEqual(len(matched_pred_indices), 1)
+    self.assertEqual(len(matched_pred_indices & {0, 1}), 1)
+
+  def test_class_mismatch_yields_empty_matches(self):
+    from langextract.evaluation import greedy_match
+
+    predicted = [_extraction("B", 0, 5)]
+    gold = [_extraction("A", 0, 5)]
+    self.assertEqual(
+        greedy_match(predicted, gold, _default_match_criteria()),
+        [],
+    )
+
+  def test_crossing_iou_prefers_higher_score_pairs(self):
+    from langextract.evaluation import greedy_match
+
+    # pred0↔gold1 and pred1↔gold0 have IoU 8/12; same-index pairs have 0.
+    predicted = [_extraction("A", 18, 28), _extraction("A", 2, 12)]
+    gold = [_extraction("A", 0, 10), _extraction("A", 20, 30)]
+    self.assertEqual(
+        greedy_match(predicted, gold, _default_match_criteria()),
+        [(0, 1), (1, 0)],
+    )
+
+
 if __name__ == "__main__":
   absltest.main()
