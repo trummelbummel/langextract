@@ -594,6 +594,133 @@ class TraceExtractWrapperTest(parameterized.TestCase):
     self.assertIsInstance(message, str)
     self.assertTrue(message.strip())
 
+  def _run_five_stages(self, canned=_CANNED):
+    wrappers = self.trace.make_stage_wrappers(self.sink, self.config)
+    _patch_stages(self, wrappers, list(_STAGE_TARGETS))
+    document, _ = _run_offline_extract(self, canned)
+    return document, self._print_records(self.sink)
+
+  def _align_record(self):
+    return next(r for r in self.sink if r.label == "align")
+
+  def _direct_align_section(self, token_offset, char_offset):
+    wrappers = self.trace.make_stage_wrappers(self.sink, self.config)
+    _patch_stages(self, wrappers, ["align"])
+    parser = resolver.Resolver(format_handler=ollama.OLLAMA_FORMAT_HANDLER)
+    resolved = parser.resolve(_CANNED, suppress_parse_errors=True)
+    args = [resolved, _SOURCE_TEXT, token_offset]
+    if char_offset is not None:
+      args.append(char_offset)
+    list(parser.align(*args))
+    printed = self._print_records(self.sink)
+    return printed[printed.index("[align]") :]
+
+  def test_align_wrapper_records_chunk_inputs_from_offline_extract(self):
+    self._run_five_stages()
+
+    record = self._align_record()
+    self.assertEqual(
+        [r.label for r in self.sink].count("align"), 1, "one align record"
+    )
+    self.assertEqual(
+        record.in_data,
+        {
+            "source_text": _SOURCE_TEXT,
+            "token_offset": 0,
+            "char_offset": 0,
+            "n_extractions": 2,
+        },
+    )
+    self.assertIs(type(record.in_data["char_offset"]), int)
+
+  def test_align_wrapper_snapshots_the_extractions_it_yielded(self):
+    document, _ = self._run_five_stages()
+
+    snaps = self._align_record().out_data["extractions"]
+    headache, elephant = snaps
+    self.assertEqual(
+        (headache.extraction_text, headache.char_interval),
+        ("headache", (18, 26)),
+    )
+    self.assertEqual(headache.alignment_status, "match_exact")
+    self.assertIsNone(elephant.char_interval)
+    self.assertEqual(
+        snaps, self.trace.snapshot_extractions(document.extractions)
+    )
+
+  def test_five_stage_walkthrough_prints_sections_in_catalog_order(self):
+    _, printed = self._run_five_stages()
+
+    positions = [
+        printed.index(f"[{label}] ")
+        for label in ("chunk", "prompt", "model", "parse", "align")
+    ]
+    self.assertEqual(positions, sorted(positions))
+    self.assertCountEqual(
+        [r.label for r in self.sink],
+        ["chunk", "prompt", "model", "parse", "align"],
+    )
+
+  def test_align_section_prints_offsets_spans_slices_and_ungrounded(self):
+    _, printed = self._run_five_stages()
+
+    section = printed[printed.index("[align]") :]
+    caption = self.config["chunk_offset_caption"]
+    self.assertIn(
+        f"offsets: token_offset=0  char_offset=0  ({caption})",
+        section.splitlines(),
+    )
+    headache = next(l for l in section.splitlines() if "'headache'" in l)
+    self.assertIn("[18, 26)", headache)
+    self.assertIn("match_exact", headache)
+    self.assertTrue(headache.endswith("slice='headache'"), headache)
+    elephant = next(
+        l for l in section.splitlines() if l.startswith("  [2] symptom")
+    )
+    self.assertTrue(
+        elephant.endswith(self.config["ungrounded_label"]), elephant
+    )
+
+  def test_align_section_prints_parse_to_align_pair(self):
+    _, printed = self._run_five_stages()
+
+    section = printed[printed.index("[align]") :]
+    self.assertIn("grounding pair (parse → align): 2 extractions", section)
+    self.assertIn("parse: char_interval=None alignment_status=None", section)
+    self.assertIn("align: char_interval=[18, 26)", section)
+
+  @parameterized.named_parameters(
+      dict(testcase_name="offsets_5_100", token=5, char=100, span="[118, 126)"),
+      dict(
+          testcase_name="char_offset_omitted",
+          token=0,
+          char=None,
+          span="[18, 26)",
+      ),
+  )
+  def test_align_section_uses_document_coordinates_minus_offset(
+      self, token, char, span
+  ):
+    section = self._direct_align_section(token, char)
+
+    shown = char or 0
+    self.assertIn(f"token_offset={token}  char_offset={shown}", section)
+    self.assertNotIn("char_offset=None", section)
+    line = next(l for l in section.splitlines() if "'headache'" in l)
+    self.assertIn(span, line)
+    self.assertTrue(line.endswith("slice='headache'"), line)
+
+  def test_align_with_empty_parse_records_zero_and_prints_empty_pair(self):
+    _, printed = self._run_five_stages("not json")
+
+    record = self._align_record()
+    self.assertEqual(record.in_data["n_extractions"], 0)
+    self.assertEqual(record.out_data["extractions"], ())
+    section = printed[printed.index("[align]") :]
+    self.assertIn("grounding pair (parse → align): 0 extractions", section)
+    self.assertIn("parse: []", section)
+    self.assertIn("align: []", section)
+
 
 if __name__ == "__main__":
   absltest.main()
