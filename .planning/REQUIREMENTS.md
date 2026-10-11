@@ -37,7 +37,7 @@ Independent of the v1.0 trace script. Practice Task 3 — gold-set evaluation.
 ### Evaluation
 
 - [x] **EVAL-01**: `evaluate(predicted, gold, ...)` scores lists of `AnnotatedDocument` and returns per-class and micro-averaged precision, recall, and F1
-- [ ] **EVAL-02**: Match requires same `extraction_class` and span IoU ≥ configurable threshold (default 0.5); optional `match_attributes`; unaligned predictions (`char_interval is None`) count as false positives
+- [x] **EVAL-02**: Match requires same `extraction_class` and span IoU ≥ configurable threshold (default 0.5); optional `match_attributes`; unaligned predictions (`char_interval is None`) count as false positives
 - [ ] **EVAL-03**: One-to-one greedy matching so one prediction cannot match two gold items
 - [x] **EVAL-04**: Tests cover perfect match, below/above IoU threshold, class mismatch, duplicates, empty inputs (hand-worked metrics); docs show a short CI regression example
 
@@ -90,7 +90,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CTR-01 | Phase 1 | Complete |
 | CTR-02 | Phase 1 | Complete |
 | EVAL-01 | Phase 7 | Complete |
-| EVAL-02 | Phase 7 | Pending |
+| EVAL-02 | Phase 7 | Complete |
 | EVAL-03 | Phase 7 | Pending |
 | EVAL-04 | Phase 7 | Complete |
 

@@ -4,18 +4,18 @@ milestone: v1.0
 milestone_name: MVP
 current_phase: 07
 current_phase_name: gold-set-evaluation-metrics
-current_plan: 2
+current_plan: 3
 status: executing
-stopped_at: Completed 07-01-PLAN.md
-last_updated: "2026-10-11T18:05:33.679Z"
+stopped_at: Completed 07-02-PLAN.md
+last_updated: "2026-10-11T18:12:47.751Z"
 last_activity: 2026-10-11
 last_activity_desc: Phase 05 execution started
-state_head: cac3cddec365c44942f3715957ff898ff50fb506
+state_head: 7fe0ef164e3c2c5faaf7d3615303d521f6e31cd8
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 16
-  completed_plans: 12
+  completed_plans: 13
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-11)
 ## Current Position
 
 Phase: 07 (gold-set-evaluation-metrics) — READY TO EXECUTE
-Current Plan: 2
+Current Plan: 3
 Total Plans in Phase: 5
 Status: Ready to execute
 Last activity: 2026-10-11 - Completed quick task 261011-p2z: drop_ungrounded opt-in on lx.extract()
@@ -79,6 +79,7 @@ Progress: [███████░░░] 67%
 | Phase 05 P02 | 4min | 2 tasks | 4 files |
 | Phase 261011-d60 P01 | 2min | 2 tasks | 2 files |
 | Phase 07 P01 | 2min | 2 tasks | 4 files |
+| Phase 07 P02 | 2min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -117,6 +118,9 @@ Recent decisions affecting current work:
 - [Phase 07]: Empty TP=FP=FN=0 yields P=R=F1=0.0
 - [Phase 07]: Micro from global count triple via one prf_from_counts call
 - [Phase 07]: per_class keys sorted alphabetically in report_from_counts
+- [Phase 07]: span_iou uses half-open exclusive end_pos; end < start → 0.0
+- [Phase 07]: SpanIoU matches with >= threshold (default 0.5)
+- [Phase 07]: TextMatch requires text_eval_func: Callable[[str, str], bool]
 
 ### Roadmap Evolution
 
@@ -149,6 +153,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-11T18:05:33.660Z
-Stopped at: Completed 07-01-PLAN.md
+Last session: 2026-10-11T18:12:47.726Z
+Stopped at: Completed 07-02-PLAN.md
 Resume file: None
