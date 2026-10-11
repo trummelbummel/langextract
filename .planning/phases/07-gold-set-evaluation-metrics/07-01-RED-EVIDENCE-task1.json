@@ -1,0 +1,9 @@
+{
+  "command": ".venv/bin/python tests/evaluation_test.py",
+  "exitCode": 1,
+  "output": "TAP version 13\nnot ok 1 - test_class_score_is_frozen\nnot ok 2 - test_prf_from_counts_duplicate_pred_half_precision\nnot ok 3 - test_prf_from_counts_empty_all_zero\nnot ok 4 - test_prf_from_counts_fn_only_zero_rates\nnot ok 5 - test_prf_from_counts_fp_only_zero_rates\nnot ok 6 - test_prf_from_counts_perfect_one_tp\n# tests 6\n# pass 0\n# fail 6\n",
+  "targetTest": "test_prf_from_counts_perfect_one_tp",
+  "targetFile": "tests/evaluation_test.py",
+  "expected": "prf_from_counts(1, 0, 0) → ClassScore precision=1.0, recall=1.0, f1=1.0, tp=1, fp=0, fn=0",
+  "actual": "ModuleNotFoundError: No module named 'langextract.evaluation'"
+}
