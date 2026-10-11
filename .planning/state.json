@@ -32,12 +32,17 @@
       "number": "6",
       "name": "AnnotatedDocument & walkthrough close",
       "status": "pending"
+    },
+    {
+      "number": "7",
+      "name": "Gold-set evaluation metrics",
+      "status": "complete"
     }
   ],
   "next": {
-    "command": "/gsd-execute-phase 5",
-    "label": "Continue Phase 05 execution",
-    "reason": "Phase 4 complete; Phase 05 plans present (05-01/05-02)"
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step",
+    "reason": "Phase 07 complete"
   },
-  "updated_at": "2026-10-11T07:03:43.505Z"
+  "updated_at": "2026-10-11T18:52:54.433Z"
 }

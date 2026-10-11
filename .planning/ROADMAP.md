@@ -17,7 +17,7 @@ Build `scripts/trace_extract.py` — a one-call printed walkthrough of `lx.extra
 - [x] **Phase 4: Stage wrappers** - Capture chunk → prompt → infer → resolve → align with live in/out records (completed 2026-10-11)
 - [ ] **Phase 5: Live extract & Ollama preflight** - One `lx.extract()` against `gemma3:4b` with clear preflight failure
 - [ ] **Phase 6: AnnotatedDocument & walkthrough close** - Print the returned document and verify the full stage dump
-- [ ] **Phase 7: Gold-set evaluation metrics** - `evaluate(predicted, gold)` with IoU matching, greedy 1:1, P/R/F1 per class + micro
+- [x] **Phase 7: Gold-set evaluation metrics** - `evaluate(predicted, gold)` with IoU matching, greedy 1:1, P/R/F1 per class + micro (completed 2026-10-11)
 
 ## Phase Details
 
@@ -177,7 +177,7 @@ Plans:
   - Layering: evaluation imports `core.data` only; core never imports evaluation
   - Suggested plan split (≤150 non-test lines each): (1) metrics (2) criteria + span_iou (3) greedy_match (4) evaluate + doc pairing + docs example + e2e
 
-**Plans:** 5/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 
@@ -211,7 +211,7 @@ Plans:
 | 4. Stage wrappers | 3/3 | Complete    | 2026-10-11 |
 | 5. Live extract & Ollama preflight | 2/2 | In Progress|  |
 | 6. AnnotatedDocument & walkthrough close | 0/TBD | Not started | - |
-| 7. Gold-set evaluation metrics | 5/5 | In Progress|  |
+| 7. Gold-set evaluation metrics | 5/5 | Complete    | 2026-10-11 |
 
 ## Coverage map
 
