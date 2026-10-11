@@ -46,6 +46,8 @@ _REDACTION_TOKEN = '<REDACTED>'
 _PROBES_ACTIVE = False
 _MAX_TAGS_BYTES = 1024 * 1024
 
+_WrapFactory = Callable[[Callable[..., Any]], Callable[..., Any]]
+
 # (label, function_name, repo_relative_path)
 STAGE_CATALOG: list[tuple[str, str, str]] = [
     ('prompt-template', 'PromptTemplateStructured', 'langextract/prompting.py'),
@@ -72,8 +74,7 @@ def load_config(path: Path) -> dict[str, Any]:
   :param path: YAML config file to read.
   :return: The parsed top-level mapping.
 
-  Raises:
-    SystemExit: with code 1 when path is missing or not a mapping.
+  :raises SystemExit: With code 1 when path is missing or not a mapping.
   """
   if not path.exists():
     expected = path.resolve()
@@ -186,7 +187,7 @@ def _safe_text(text: Any) -> str:
 
 def make_model_wrapper(
     sink: list[StageRecord], redact_keys: Iterable[str]
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+) -> _WrapFactory:
   """Build an original -> replacement wrapper for OllamaLanguageModel.infer.
 
   The replacement yields the same items lazily and appends one 'model'
@@ -200,7 +201,7 @@ def make_model_wrapper(
 
   def wrap(original: Callable[..., Any]) -> Callable[..., Any]:
     @functools.wraps(original)
-    def traced_infer(self, *args, **kwargs):
+    def traced_infer(self: Any, *args: Any, **kwargs: Any) -> Iterator[Any]:
       bound = inspect.signature(original).bind(self, *args, **kwargs)
       prompts = tuple(bound.arguments['batch_prompts'])
       extra = {k: v for k, v in kwargs.items() if k != 'batch_prompts'}
@@ -210,7 +211,7 @@ def make_model_wrapper(
           'kwargs': redact(extra, keys=keys),
       }
 
-      def traced_outputs():
+      def traced_outputs() -> Iterator[Any]:
         for index, item in enumerate(original(self, *args, **kwargs)):
           for scored in item:
             out_data = {
@@ -230,7 +231,7 @@ def make_model_wrapper(
 
 def make_chunk_wrapper(
     sink: list[StageRecord],
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+) -> _WrapFactory:
   """Build an original -> replacement wrapper for ChunkIterator.__iter__.
 
   ChunkIterator.__iter__ returns self, so the replacement drives the result
@@ -242,7 +243,7 @@ def make_chunk_wrapper(
 
   def wrap(original: Callable[..., Any]) -> Callable[..., Any]:
     @functools.wraps(original)
-    def traced_iter(self, *args, **kwargs):
+    def traced_iter(self: Any, *args: Any, **kwargs: Any) -> Iterator[Any]:
       it = original(self, *args, **kwargs)
       in_data = {
           'max_char_buffer': self.max_char_buffer,
@@ -275,7 +276,7 @@ def make_chunk_wrapper(
 
 def make_prompt_wrapper(
     sink: list[StageRecord],
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+) -> _WrapFactory:
   """Build an original -> replacement wrapper for build_prompt.
 
   The original runs exactly once (it updates the builder's previous-chunk
@@ -287,7 +288,7 @@ def make_prompt_wrapper(
 
   def wrap(original: Callable[..., Any]) -> Callable[..., Any]:
     @functools.wraps(original)
-    def traced_build_prompt(self, *args, **kwargs):
+    def traced_build_prompt(self: Any, *args: Any, **kwargs: Any) -> Any:
       bound = inspect.signature(original).bind(self, *args, **kwargs)
       bound.apply_defaults()
       prompt = original(self, *args, **kwargs)
@@ -346,7 +347,7 @@ def _diagnose_empty_parse(
 
 def make_parse_wrapper(
     sink: list[StageRecord],
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+) -> _WrapFactory:
   """Build an original -> replacement wrapper for Resolver.resolve.
 
   The record is appended before returning; the original result object is
@@ -358,7 +359,7 @@ def make_parse_wrapper(
 
   def wrap(original: Callable[..., Any]) -> Callable[..., Any]:
     @functools.wraps(original)
-    def traced_resolve(self, *args, **kwargs):
+    def traced_resolve(self: Any, *args: Any, **kwargs: Any) -> Any:
       out = original(self, *args, **kwargs)
       bound = inspect.signature(original).bind(self, *args, **kwargs)
       bound.apply_defaults()
@@ -382,7 +383,7 @@ def make_parse_wrapper(
 
 def make_align_wrapper(
     sink: list[StageRecord],
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+) -> _WrapFactory:
   """Build an original -> replacement wrapper for Resolver.align.
 
   The replacement returns a lazy generator that yields the same Extraction
@@ -395,7 +396,7 @@ def make_align_wrapper(
 
   def wrap(original: Callable[..., Any]) -> Callable[..., Any]:
     @functools.wraps(original)
-    def traced_align(self, *args, **kwargs):
+    def traced_align(self: Any, *args: Any, **kwargs: Any) -> Iterator[Any]:
       bound = inspect.signature(original).bind(self, *args, **kwargs)
       bound.apply_defaults()
       given = bound.arguments
@@ -406,7 +407,7 @@ def make_align_wrapper(
           'n_extractions': len(given['extractions']),
       }
 
-      def traced_outputs():
+      def traced_outputs() -> Iterator[Any]:
         seen = []
         try:
           for extraction in original(self, *args, **kwargs):
@@ -425,7 +426,7 @@ def make_align_wrapper(
 
 def make_stage_wrappers(
     sink: list[StageRecord], config: Mapping[str, Any]
-) -> dict[str, Callable[[Callable[..., Any]], Callable[..., Any]]]:
+) -> dict[str, _WrapFactory]:
   """Map catalog labels to original -> replacement wrapper callables.
 
   :param sink: Caller-owned list that receives StageRecords.
@@ -494,9 +495,7 @@ def _restore_probe_attrs(
     setattr(cls, attr, original)
 
 
-_IDENTITY_WRAP_FACTORIES: dict[
-    str, Callable[[Callable[..., Any]], Callable[..., Any]]
-] = {
+_IDENTITY_WRAP_FACTORIES: dict[str, _WrapFactory] = {
     'chunk': _identity_wrap_return,
     'prompt': _identity_wrap_return,
     'model': _identity_wrap_yield,
@@ -507,10 +506,8 @@ _IDENTITY_WRAP_FACTORIES: dict[
 
 @contextlib.contextmanager
 def trace_probes(
-    wrappers: (
-        Mapping[str, Callable[[Callable[..., Any]], Callable[..., Any]]] | None
-    ) = None,
-):
+    wrappers: Mapping[str, _WrapFactory] | None = None,
+) -> Iterator[None]:
   """Install call-scoped identity (or supplied) wraps on extract targets.
 
   Restores every class attribute in finally, including on exception. Nested
@@ -518,7 +515,9 @@ def trace_probes(
 
   :param wrappers: Optional original->replacement factories keyed by catalog
     label (chunk/prompt/model/parse/align). Missing labels fall back to
-    identity passthroughs. Unknown keys raise ValueError.
+    identity passthroughs.
+  :raises RuntimeError: If probes are already active.
+  :raises ValueError: If wrappers contains an unknown label.
   """
   global _PROBES_ACTIVE
   if _PROBES_ACTIVE:
@@ -809,8 +808,6 @@ def _self_check_probe_restore() -> None:
     for label, (cls, attr) in targets.items():
       if getattr(cls, attr) is not originals[label]:
         raise AssertionError(f'{label} was not restored')
-  except SystemExit:
-    raise
   except Exception as exc:
     print(f'Error: probe self-check failed: {exc}', file=sys.stderr)
     raise SystemExit(1) from exc
@@ -818,6 +815,50 @@ def _self_check_probe_restore() -> None:
 
 class PreflightError(RuntimeError):
   """Raised when the Ollama host or model is not usable."""
+
+
+def _fetch_tags(model_url: str, host: str, timeout: float) -> bytes:
+  """Read at most _MAX_TAGS_BYTES of GET {model_url}/api/tags.
+
+  :param model_url: Base URL of the Ollama server.
+  :param host: Host shown in error messages.
+  :param timeout: Seconds to wait for the response.
+  :return: The raw response body.
+  :raises PreflightError: On an HTTP error or an unreachable host.
+  """
+  url = f'{model_url.rstrip("/")}/api/tags'
+  try:
+    with urllib.request.urlopen(url, timeout=timeout) as response:
+      return response.read(_MAX_TAGS_BYTES)
+  except urllib.error.HTTPError as exc:
+    raise PreflightError(
+        f'Ollama at {host} returned HTTP {exc.code} for /api/tags'
+    ) from exc
+  except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+    reason = getattr(exc, 'reason', exc)
+    raise PreflightError(
+        f'Ollama is not reachable at {host} ({reason}). '
+        'Start it with: ollama serve'
+    ) from exc
+
+
+def _listed_model_names(body: bytes, host: str) -> set[Any]:
+  """Collect every name/model value listed in an /api/tags body.
+
+  :param body: Raw JSON response body.
+  :param host: Host shown in error messages.
+  :return: The listed values (may include None for entries lacking a key).
+  :raises PreflightError: If the body is not the expected structure.
+  """
+  try:
+    entries = json.loads(body)['models']
+    return {
+        value
+        for entry in entries
+        for value in (entry.get('name'), entry.get('model'))
+    }
+  except (ValueError, KeyError, TypeError, AttributeError) as exc:
+    raise PreflightError(f'unexpected /api/tags response from {host}') from exc
 
 
 def preflight_ollama(model_url: str, model_id: str, timeout: float) -> None:
@@ -837,29 +878,8 @@ def preflight_ollama(model_url: str, model_id: str, timeout: float) -> None:
         f'model_url must be http(s)://host:port, got {model_url!r}'
     )
   host = _host_from_model_url(model_url)
-  url = f'{model_url.rstrip("/")}/api/tags'
-  try:
-    with urllib.request.urlopen(url, timeout=timeout) as response:
-      body = response.read(_MAX_TAGS_BYTES)
-  except urllib.error.HTTPError as exc:
-    raise PreflightError(
-        f'Ollama at {host} returned HTTP {exc.code} for /api/tags'
-    ) from exc
-  except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
-    reason = getattr(exc, 'reason', exc)
-    raise PreflightError(
-        f'Ollama is not reachable at {host} ({reason}). '
-        'Start it with: ollama serve'
-    ) from exc
-  try:
-    entries = json.loads(body)['models']
-    names = {
-        value
-        for entry in entries
-        for value in (entry.get('name'), entry.get('model'))
-    }
-  except (ValueError, KeyError, TypeError, AttributeError) as exc:
-    raise PreflightError(f'unexpected /api/tags response from {host}') from exc
+  body = _fetch_tags(model_url, host, timeout)
+  names = _listed_model_names(body, host)
   if model_id not in names and f'{model_id}:latest' not in names:
     available = ', '.join(sorted(n for n in names if n)) or 'none'
     raise PreflightError(
@@ -911,6 +931,7 @@ def run_live(config: Mapping[str, Any]) -> int:
 
   :param config: Config mapping with the call constants.
   :return: Process exit code (0 on success).
+  :raises PreflightError: If the Ollama host or model is not usable.
   """
   preflight_ollama(
       config['model_url'], config['model_id'], config['preflight_timeout_s']

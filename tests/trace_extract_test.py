@@ -1053,7 +1053,7 @@ class _StubOllama(http.server.ThreadingHTTPServer):
 
   daemon_threads = True
 
-  def __init__(self):
+  def __init__(self) -> None:
     super().__init__(("127.0.0.1", 0), _StubHandler)
     self.hits = {"/api/tags": 0, "/api/generate": 0}
     self.tags_body = _STUB_TAGS_BODY
@@ -1062,16 +1062,18 @@ class _StubOllama(http.server.ThreadingHTTPServer):
     self.tags_delay = 0.0
 
   @property
-  def url(self):
+  def url(self) -> str:
     return f"http://127.0.0.1:{self.server_address[1]}"
 
 
 class _StubHandler(http.server.BaseHTTPRequestHandler):
 
-  def log_message(self, *args):
+  def log_message(self, *args) -> None:
     pass
 
-  def _reply(self, body, status=200, raw=None):
+  def _reply(
+      self, body: dict, status: int = 200, raw: bytes | None = None
+  ) -> None:
     payload = raw if raw is not None else json.dumps(body).encode("utf-8")
     self.send_response(status)
     self.send_header("Content-Type", "application/json")
@@ -1079,14 +1081,14 @@ class _StubHandler(http.server.BaseHTTPRequestHandler):
     self.end_headers()
     self.wfile.write(payload)
 
-  def do_GET(self):  # pylint: disable=invalid-name
+  def do_GET(self) -> None:  # pylint: disable=invalid-name
     self.server.hits[self.path] = self.server.hits.get(self.path, 0) + 1
     time.sleep(self.server.tags_delay)
     self._reply(
         self.server.tags_body, self.server.tags_status, self.server.tags_raw
     )
 
-  def do_POST(self):  # pylint: disable=invalid-name
+  def do_POST(self) -> None:  # pylint: disable=invalid-name
     self.rfile.read(int(self.headers.get("Content-Length", 0)))
     self.server.hits[self.path] = self.server.hits.get(self.path, 0) + 1
     self._reply(_STUB_GENERATE_BODY)
@@ -1156,7 +1158,7 @@ class TraceExtractLiveTest(absltest.TestCase):
     self.assertEqual(out.getvalue(), expected.getvalue())
 
 
-def _closed_port_url():
+def _closed_port_url() -> str:
   with socket.socket() as sock:
     sock.bind(("127.0.0.1", 0))
     port = sock.getsockname()[1]
@@ -1187,13 +1189,13 @@ class TraceExtractPreflightTest(parameterized.TestCase):
         mock.patch.object(self.trace, "_CONFIG_PATH", config_path)
     )
 
-  def _run_main(self):
+  def _run_main(self) -> tuple[int, str, str]:
     out, err = io.StringIO(), io.StringIO()
     with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
       code = self.trace.main([])
     return code, out.getvalue(), err.getvalue()
 
-  def _assert_fail_closed(self, expected):
+  def _assert_fail_closed(self, expected: list[str]) -> None:
     code, out, err = self._run_main()
     self.assertEqual(code, 1)
     self.assertEqual(out, "")
