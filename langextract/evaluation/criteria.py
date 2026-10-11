@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import dataclasses
 from typing import Protocol
 
@@ -26,6 +27,8 @@ __all__ = [
     "span_iou",
     "SameClass",
     "SpanIoU",
+    "AttributesEqual",
+    "TextMatch",
 ]
 
 
@@ -73,3 +76,23 @@ class SpanIoU:
 
   def __call__(self, predicted: data.Extraction, gold: data.Extraction) -> bool:
     return span_iou(predicted, gold) >= self.threshold
+
+
+@dataclasses.dataclass(frozen=True)
+class AttributesEqual:
+  """Match when predicted and gold attributes dicts compare equal (==)."""
+
+  def __call__(self, predicted: data.Extraction, gold: data.Extraction) -> bool:
+    return predicted.attributes == gold.attributes
+
+
+@dataclasses.dataclass(frozen=True)
+class TextMatch:
+  """Match by calling an injected text comparison function (D-02 / D-03)."""
+
+  text_eval_func: Callable[[str, str], bool]
+
+  def __call__(self, predicted: data.Extraction, gold: data.Extraction) -> bool:
+    return bool(
+        self.text_eval_func(predicted.extraction_text, gold.extraction_text)
+    )
