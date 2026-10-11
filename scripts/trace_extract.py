@@ -780,14 +780,45 @@ def _print_grounding_lines(
     print(f'    align: {_format_grounding(align, ungrounded_label)}')
 
 
+def _self_check_probe_restore() -> None:
+  """Prove exception-path restore for all five probe targets.
+
+  Silent on success. On any failure prints one Error line to stderr and
+  raises SystemExit(1). Does not call lx.extract or contact a model.
+  """
+  targets = _load_probe_targets()
+  originals = {
+      label: cls.__dict__[attr] for label, (cls, attr) in targets.items()
+  }
+  try:
+    try:
+      with trace_probes():
+        for label, (cls, attr) in targets.items():
+          if getattr(cls, attr) is originals[label]:
+            raise AssertionError(f'{label} was not wrapped')
+        raise RuntimeError('probe self-check')
+    except RuntimeError as exc:
+      if str(exc) != 'probe self-check':
+        raise
+    for label, (cls, attr) in targets.items():
+      if getattr(cls, attr) is not originals[label]:
+        raise AssertionError(f'{label} was not restored')
+  except SystemExit:
+    raise
+  except Exception as exc:
+    print(f'Error: probe self-check failed: {exc}', file=sys.stderr)
+    raise SystemExit(1) from exc
+
+
 def main() -> int:
-  """Print the call header and stage catalog.
+  """Print the call header and stage catalog, then prove probe restore.
 
   :return: Process exit code (0 on success).
   """
   config = load_config(_CONFIG_PATH)
   print_call_header(config)
   print_stage_catalog()
+  _self_check_probe_restore()
   return 0
 
 
