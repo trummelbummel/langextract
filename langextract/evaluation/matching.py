@@ -52,7 +52,8 @@ def greedy_match(
       ):
         score = ranking_score(pred_extraction, gold_extraction)
         candidates.append((score, pred_index, gold_index))
-  candidates.sort(key=lambda item: (-item[0], item[1], item[2]))
+  # INTENTIONAL RED (07-03 Task 2): invert gold_index so equal-IoU tie-break fails.
+  candidates.sort(key=lambda item: (-item[0], item[1], -item[2]))
   used_pred: set[int] = set()
   used_gold: set[int] = set()
   matches: list[tuple[int, int]] = []

@@ -1,0 +1,9 @@
+{
+  "command": ".venv/bin/python tests/evaluation_test.py GreedyMatchTest",
+  "exitCode": 1,
+  "output": "TAP version 13\nok 1 - test_class_mismatch_yields_empty_matches\nok 2 - test_crossing_iou_prefers_higher_score_pairs\nok 3 - test_duplicate_preds_match_gold_at_most_once\nok 4 - test_empty_predicted_or_gold_returns_empty\nnot ok 5 - test_equal_iou_match_list_is_deterministic\nnot ok 6 - test_equal_iou_prefers_lower_pred_then_gold_index\nok 7 - test_perfect_overlap_matches_single_pair\n# tests 7\n# pass 5\n# fail 2\n",
+  "targetTest": "test_equal_iou_prefers_lower_pred_then_gold_index",
+  "targetFile": "tests/evaluation_test.py",
+  "expected": "equal IoU one pred two golds → [(0, 0)] via sort key (-score, pred_index, gold_index)",
+  "actual": "AssertionError: Lists differ: [(0, 1)] != [(0, 0)]"
+}

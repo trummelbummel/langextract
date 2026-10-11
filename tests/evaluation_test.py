@@ -363,6 +363,36 @@ class GreedyMatchTest(parameterized.TestCase):
         [(0, 1), (1, 0)],
     )
 
+  def test_equal_iou_prefers_lower_pred_then_gold_index(self):
+    from langextract.evaluation import greedy_match
+
+    # One pred, two identical golds — IoU ties; lower gold_index must win.
+    predicted = [_extraction("A", 0, 5)]
+    gold = [_extraction("A", 0, 5), _extraction("A", 0, 5)]
+    self.assertEqual(
+        greedy_match(predicted, gold, _default_match_criteria()),
+        [(0, 0)],
+    )
+
+  def test_empty_predicted_or_gold_returns_empty(self):
+    from langextract.evaluation import greedy_match
+
+    criteria = _default_match_criteria()
+    self.assertEqual(greedy_match([], [_extraction("A", 0, 5)], criteria), [])
+    self.assertEqual(greedy_match([_extraction("A", 0, 5)], [], criteria), [])
+    self.assertEqual(greedy_match([], [], criteria), [])
+
+  def test_equal_iou_match_list_is_deterministic(self):
+    from langextract.evaluation import greedy_match
+
+    predicted = [_extraction("A", 0, 5), _extraction("A", 0, 5)]
+    gold = [_extraction("A", 0, 5), _extraction("A", 0, 5)]
+    criteria = _default_match_criteria()
+    first = greedy_match(predicted, gold, criteria)
+    second = greedy_match(list(predicted), list(gold), criteria)
+    self.assertEqual(first, [(0, 0), (1, 1)])
+    self.assertEqual(second, first)
+
 
 if __name__ == "__main__":
   absltest.main()
