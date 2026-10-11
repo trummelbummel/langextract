@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for langextract.evaluation.metrics."""
+"""Tests for langextract.evaluation metrics and match criteria."""
 
 import dataclasses
 
 from absl.testing import absltest
 from absl.testing import parameterized
+
+from langextract.core import data
 
 
 class MetricsPrfTest(parameterized.TestCase):
@@ -127,6 +129,131 @@ class MetricsReportTest(parameterized.TestCase):
     field_names = {f.name for f in dataclasses.fields(EvaluationReport)}
     self.assertEqual(field_names, {"per_class", "micro"})
     self.assertNotIn("macro", field_names)
+
+
+def _extraction(
+    extraction_class: str,
+    start: int | None,
+    end: int | None,
+    *,
+    text: str = "x",
+    attributes: dict | None = None,
+    interval: data.CharInterval | None | object = ...,
+) -> data.Extraction:
+  """Build an Extraction with a half-open CharInterval (or None)."""
+  if interval is ...:
+    if start is None and end is None:
+      char_interval = data.CharInterval(None, None)
+    else:
+      char_interval = data.CharInterval(start, end)
+  else:
+    char_interval = interval  # type: ignore[assignment]
+  return data.Extraction(
+      extraction_class=extraction_class,
+      extraction_text=text,
+      char_interval=char_interval,
+      attributes=attributes,
+  )
+
+
+class CriteriaSpanIoUTest(parameterized.TestCase):
+  """Hand-worked exclusive-end span_iou and SameClass/SpanIoU (EVAL-02)."""
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name="perfect_identical",
+          pred=_extraction("A", 0, 5),
+          gold=_extraction("A", 0, 5),
+          expected=1.0,
+      ),
+      dict(
+          testcase_name="below_threshold_2_over_18",
+          pred=_extraction("A", 0, 10),
+          gold=_extraction("A", 8, 18),
+          expected=2.0 / 18.0,
+      ),
+      dict(
+          testcase_name="above_threshold_0_8",
+          pred=_extraction("A", 0, 10),
+          gold=_extraction("A", 2, 10),
+          expected=0.8,
+      ),
+      dict(
+          testcase_name="none_char_interval",
+          pred=_extraction("A", 0, 5, interval=None),
+          gold=_extraction("A", 0, 5),
+          expected=0.0,
+      ),
+      dict(
+          testcase_name="partial_none_positions",
+          pred=_extraction("A", None, None),
+          gold=_extraction("A", 0, 5),
+          expected=0.0,
+      ),
+      dict(
+          testcase_name="inverted_end_lt_start",
+          pred=_extraction("A", 10, 5),
+          gold=_extraction("A", 0, 5),
+          expected=0.0,
+      ),
+      dict(
+          testcase_name="touching_exclusive_adjacent",
+          pred=_extraction("A", 0, 5),
+          gold=_extraction("A", 5, 10),
+          expected=0.0,
+      ),
+  )
+  def test_span_iou(self, pred, gold, expected):
+    from langextract.evaluation import span_iou
+
+    self.assertAlmostEqual(span_iou(pred, gold), expected, places=7)
+
+  def test_same_class_true_when_equal(self):
+    from langextract.evaluation import SameClass
+
+    pred = _extraction("A", 0, 5)
+    gold = _extraction("A", 10, 15)
+    self.assertTrue(SameClass()(pred, gold))
+
+  def test_same_class_false_when_different(self):
+    from langextract.evaluation import SameClass
+
+    pred = _extraction("A", 0, 5)
+    gold = _extraction("B", 0, 5)
+    self.assertFalse(SameClass()(pred, gold))
+
+  def test_span_iou_criterion_default_threshold_is_half(self):
+    from langextract.evaluation import SpanIoU
+
+    self.assertEqual(SpanIoU().threshold, 0.5)
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name="matches_above_threshold_0_8",
+          pred=_extraction("A", 0, 10),
+          gold=_extraction("A", 2, 10),
+          threshold=0.5,
+          expected=True,
+      ),
+      dict(
+          testcase_name="matches_exactly_half",
+          pred=_extraction("A", 0, 10),
+          gold=_extraction("A", 5, 10),
+          threshold=0.5,
+          expected=True,
+      ),
+      dict(
+          testcase_name="fails_below_threshold_2_over_18",
+          pred=_extraction("A", 0, 10),
+          gold=_extraction("A", 8, 18),
+          threshold=0.5,
+          expected=False,
+      ),
+  )
+  def test_span_iou_criterion(self, pred, gold, threshold, expected):
+    from langextract.evaluation import SpanIoU
+
+    self.assertEqual(SpanIoU(threshold)(pred, gold), expected)
 
 
 if __name__ == "__main__":

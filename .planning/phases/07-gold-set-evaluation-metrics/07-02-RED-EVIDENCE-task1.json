@@ -1,0 +1,9 @@
+{
+  "command": ".venv/bin/python tests/evaluation_test.py",
+  "exitCode": 1,
+  "output": "TAP version 13\nnot ok 1 - test_same_class_false_when_different\nnot ok 2 - test_same_class_true_when_equal\nnot ok 3 - test_span_iou_above_threshold_0_8\nnot ok 4 - test_span_iou_below_threshold_2_over_18\nnot ok 5 - test_span_iou_criterion_default_threshold_is_half\nnot ok 6 - test_span_iou_criterion_fails_below_threshold_2_over_18\nnot ok 7 - test_span_iou_criterion_matches_above_threshold_0_8\nnot ok 8 - test_span_iou_criterion_matches_exactly_half\nnot ok 9 - test_span_iou_inverted_end_lt_start\nnot ok 10 - test_span_iou_none_char_interval\nnot ok 11 - test_span_iou_partial_none_positions\nnot ok 12 - test_span_iou_perfect_identical\nnot ok 13 - test_span_iou_touching_exclusive_adjacent\n# tests 13\n# pass 0\n# fail 13\n",
+  "targetTest": "test_span_iou_perfect_identical",
+  "targetFile": "tests/evaluation_test.py",
+  "expected": "span_iou(A[0,5), A[0,5)) → 1.0",
+  "actual": "ImportError: cannot import name 'span_iou' from 'langextract.evaluation'"
+}
