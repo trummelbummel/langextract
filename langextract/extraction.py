@@ -21,6 +21,8 @@ import dataclasses
 import typing
 import warnings
 
+from absl import logging
+
 from langextract import annotation
 from langextract import factory
 from langextract import io
@@ -40,6 +42,20 @@ def _has_preconfigured_output_schema(model: typing.Any) -> bool:
   return isinstance(model, base_model.BaseLanguageModel) and getattr(
       model.schema, "from_output_schema", False
   )
+
+
+def _drop_ungrounded(doc: data.AnnotatedDocument) -> data.AnnotatedDocument:
+  """Keep only extractions whose char_interval is set; log removals at INFO."""
+  extractions = doc.extractions or []
+  kept = [e for e in extractions if e.char_interval is not None]
+  removed_count = len(extractions) - len(kept)
+  if removed_count > 0:
+    logging.info(
+        "Dropped %d ungrounded extraction(s) (char_interval is None)",
+        removed_count,
+    )
+  doc.extractions = kept
+  return doc
 
 
 def extract(
@@ -72,6 +88,7 @@ def extract(
     prompt_validation_strict: bool = False,
     show_progress: bool = True,
     tokenizer: tokenizer_lib.Tokenizer | None = None,
+    drop_ungrounded: bool = False,
 ) -> list[data.AnnotatedDocument] | data.AnnotatedDocument:
   """Extracts structured information from text.
 
@@ -190,6 +207,10 @@ def extract(
       prompt_validation_strict: When True and prompt_validation_level is ERROR,
         raises on non-exact matches (MATCH_FUZZY, MATCH_LESSER). Defaults to False.
       show_progress: Whether to show progress bar during extraction. Defaults to True.
+      drop_ungrounded: If True, drop extractions whose `char_interval` is None
+        (ungrounded) from the returned AnnotatedDocument(s). Defaults to False
+        so existing callers keep grounded and ungrounded results. When True and
+        at least one extraction is removed, logs the removed count at INFO.
 
   Returns:
       An AnnotatedDocument with the extracted information when input is a
@@ -407,6 +428,8 @@ def extract(
         tokenizer=tokenizer,
         **alignment_kwargs,
     )
+    if drop_ungrounded:
+      return _drop_ungrounded(result)
     return result
   else:
     if additional_context is not None:
@@ -431,4 +454,7 @@ def extract(
         tokenizer=tokenizer,
         **alignment_kwargs,
     )
-    return list(result)
+    docs = list(result)
+    if drop_ungrounded:
+      return [_drop_ungrounded(doc) for doc in docs]
+    return docs
