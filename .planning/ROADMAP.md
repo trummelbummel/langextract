@@ -128,7 +128,7 @@ Plans:
   2. With Ollama down or `gemma3:4b` missing, the script exits with a clear error before printing a fake empty walkthrough
   3. The run performs exactly one `lx.extract()` and exactly one model `infer` (no second inference, no cloud providers)
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans executed
 
 Plans:
 **Wave 1**
@@ -137,7 +137,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 05-02-PLAN.md — Single-inference guard + one-chunk pre-check; real gemma3:4b run; COVERAGE.md
+- [x] 05-02-PLAN.md — Single-inference guard + one-chunk pre-check; real gemma3:4b run; COVERAGE.md
 
 ### Phase 6: AnnotatedDocument & walkthrough close
 
@@ -161,7 +161,7 @@ Plans:
 | 2. Extraction snapshots | 2/2 | Complete    | 2026-10-10 |
 | 3. Call-scoped probe manager | 2/2 | Complete    | 2026-10-11 |
 | 4. Stage wrappers | 3/3 | Complete    | 2026-10-11 |
-| 5. Live extract & Ollama preflight | 1/2 | In Progress|  |
+| 5. Live extract & Ollama preflight | 2/2 | In Progress|  |
 | 6. AnnotatedDocument & walkthrough close | 0/TBD | Not started | - |
 
 ## Coverage map

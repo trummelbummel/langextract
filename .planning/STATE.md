@@ -4,18 +4,18 @@ milestone: v1.0
 milestone_name: MVP
 current_phase: 05
 current_phase_name: Live extract & Ollama preflight
-current_plan: 1
+current_plan: 2
 status: executing
-stopped_at: Completed quick 261011-cst-PLAN.md
-last_updated: "2026-10-11T07:17:56.668Z"
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-10-11T07:23:40.451Z"
 last_activity: 2026-10-11
 last_activity_desc: Phase 05 execution started
-state_head: d70aa60f7c5a9c5634d0f1abcbd5edc4b2d07aac
+state_head: f0e88509cec9d048b3f926120820413f2826e9ab
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 11
-  completed_plans: 10
+  completed_plans: 11
 ---
 
 # Project State
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-11)
 ## Current Position
 
 Phase: 05 (Live extract & Ollama preflight) — EXECUTING
-Current Plan: 1
+Current Plan: 2
 Total Plans in Phase: 2
-Status: Executing Phase 05
+Status: Ready to execute
 Last activity: 2026-10-11 - Completed quick task 261011-cst: make the script read from config the file in filepath data/example_document.md , make the chunking configurable in the config and load it in the script
 
 Progress: [███████░░░] 67%
@@ -76,6 +76,7 @@ Progress: [███████░░░] 67%
 | Phase 03 P02 | 3min | 2 tasks | 2 files |
 | Phase 05 P01 | 25 min | 2 tasks | 3 files |
 | Phase 261011-cst P01 | 2min | 2 tasks | 4 files |
+| Phase 05 P02 | 4min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -107,6 +108,8 @@ Recent decisions affecting current work:
 - [Phase 05]: 05-01: preflight matches exact model id or :latest only; non-http(s) model_url rejected before any request
 - [Phase 05]: 05-01: --catalog-only keeps Phase 3 D-09 self-check (not langextract-free); system python lacks yaml so verify with .venv
 - [Phase 05]: Quick 261011-cst: document_path + chunk kwargs from config; CLI document positional removed
+- [Phase 05]: 05-02: Infer calls counted by distinct id(model in_data), not prompt_index==0 alone (WR-05)
+- [Phase 05]: 05-02: One-chunk pre-check uses document_path text vs config max_char_buffer; buffer raised to 40000 for example_document.md
 
 ### Pending Todos
 
@@ -133,6 +136,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-11T07:17:56.504Z
-Stopped at: Completed quick 261011-cst-PLAN.md
+Last session: 2026-10-11T07:23:40.435Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None
