@@ -15,10 +15,13 @@
 """Tests for scripts/trace_extract.py extraction snapshots."""
 
 import contextlib
+import http.server
 import importlib.util
 import io
+import json
 import pathlib
 import sys
+import threading
 from unittest import mock
 
 from absl.testing import absltest
@@ -1013,7 +1016,7 @@ class TraceExtractProbeTest(absltest.TestCase):
     err = io.StringIO()
     with mock.patch.object(self.trace, "_self_check_probe_restore", spy):
       with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-        code = self.trace.main()
+        code = self.trace.main(["--catalog-only"])
     self.assertEqual(code, 0)
     self.assertEqual(calls, [1])
     self.assertEqual(err.getvalue(), "")
@@ -1032,6 +1035,115 @@ class TraceExtractProbeTest(absltest.TestCase):
     self.assertIn("helper: WordAligner.align_extractions", text)
     self.assertNotIn("probe self-check", text)
     self.assertNotIn("grounding pair", text)
+
+
+_STUB_GENERATE_BODY = {
+    "response": '{"extractions": [{"symptom": "headache"}]}',
+    "done": True,
+}
+_STUB_TAGS_BODY = {"models": [{"name": "gemma3:4b", "model": "gemma3:4b"}]}
+
+
+class _StubOllama(http.server.ThreadingHTTPServer):
+  """Local Ollama-compatible server with per-path hit counters."""
+
+  daemon_threads = True
+
+  def __init__(self):
+    super().__init__(("127.0.0.1", 0), _StubHandler)
+    self.hits = {"/api/tags": 0, "/api/generate": 0}
+    self.tags_body = _STUB_TAGS_BODY
+
+  @property
+  def url(self):
+    return f"http://127.0.0.1:{self.server_address[1]}"
+
+
+class _StubHandler(http.server.BaseHTTPRequestHandler):
+
+  def log_message(self, *args):
+    pass
+
+  def _reply(self, body):
+    payload = json.dumps(body).encode("utf-8")
+    self.send_response(200)
+    self.send_header("Content-Type", "application/json")
+    self.send_header("Content-Length", str(len(payload)))
+    self.end_headers()
+    self.wfile.write(payload)
+
+  def do_GET(self):  # pylint: disable=invalid-name
+    self.server.hits[self.path] = self.server.hits.get(self.path, 0) + 1
+    self._reply(self.server.tags_body)
+
+  def do_POST(self):  # pylint: disable=invalid-name
+    self.rfile.read(int(self.headers.get("Content-Length", 0)))
+    self.server.hits[self.path] = self.server.hits.get(self.path, 0) + 1
+    self._reply(_STUB_GENERATE_BODY)
+
+
+class TraceExtractLiveTest(absltest.TestCase):
+  """Live path against a local stub Ollama server (Phase 5)."""
+
+  def setUp(self):
+    super().setUp()
+    self.trace = _load_script_module()
+    self.config = self.trace.load_config(self.trace._CONFIG_PATH)
+    self.stub = _StubOllama()
+    threading.Thread(target=self.stub.serve_forever, daemon=True).start()
+    self.addCleanup(self.stub.server_close)
+    self.addCleanup(self.stub.shutdown)
+
+  def test_run_live_walks_one_extract_against_stub(self):
+    config = {**self.config, "model_url": self.stub.url}
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+      code = self.trace.run_live(config)
+    text = out.getvalue()
+    self.assertEqual(code, 0)
+    self.assertTrue(text.startswith("lx.extract  model_id=gemma3:4b"))
+    self.assertIn("[model] OllamaLanguageModel.infer", text)
+    self.assertIn('{"extractions": [{"symptom": "headache"}]}', text)
+    self.assertIn("[align] Resolver.align", text)
+    self.assertEqual(self.stub.hits, {"/api/tags": 1, "/api/generate": 1})
+
+  def test_extract_kwargs_pins_local_ollama_call(self):
+    kwargs = self.trace._extract_kwargs(self.config)
+    self.assertEqual(kwargs["model_id"], "gemma3:4b")
+    self.assertEqual(kwargs["model_url"], self.config["model_url"])
+    self.assertEqual(kwargs["extraction_passes"], 1)
+    self.assertIs(kwargs["debug"], False)
+    self.assertIs(kwargs["show_progress"], False)
+    self.assertIs(kwargs["fetch_urls"], False)
+    self.assertEqual(
+        kwargs["language_model_params"]["timeout"],
+        self.config["request_timeout_s"],
+    )
+
+  def test_extract_kwargs_omits_cloud_and_schema_keys(self):
+    kwargs = self.trace._extract_kwargs(self.config)
+    for key in (
+        "model",
+        "api_key",
+        "output_schema",
+        "fence_output",
+        "language_model_type",
+    ):
+      self.assertNotIn(key, kwargs)
+
+  def test_main_catalog_only_needs_no_network(self):
+    expected = io.StringIO()
+    with contextlib.redirect_stdout(expected):
+      self.trace.print_call_header(self.config)
+      self.trace.print_stage_catalog()
+    out = io.StringIO()
+    with mock.patch(
+        "urllib.request.urlopen", side_effect=AssertionError("network used")
+    ):
+      with contextlib.redirect_stdout(out):
+        code = self.trace.main(["--catalog-only"])
+    self.assertEqual(code, 0)
+    self.assertEqual(out.getvalue(), expected.getvalue())
 
 
 if __name__ == "__main__":
