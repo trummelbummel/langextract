@@ -297,6 +297,56 @@ def make_prompt_wrapper(
   return wrap
 
 
+_FORMAT_FLAGS = (
+    'format_type',
+    'use_fences',
+    'strict_fences',
+    'use_wrapper',
+    'wrapper_key',
+)
+
+
+def _format_flags(resolver_self: Any) -> dict[str, Any]:
+  """Read format flags from the Resolver's own format_handler."""
+  handler = getattr(resolver_self, 'format_handler', None)
+  flags = {name: getattr(handler, name, None) for name in _FORMAT_FLAGS}
+  flag = flags['format_type']
+  flags['format_type'] = getattr(flag, 'value', flag)
+  return flags
+
+
+def make_parse_wrapper(
+    sink: list[StageRecord],
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+  """Build an original -> replacement wrapper for Resolver.resolve.
+
+  The record is appended before returning; the original result object is
+  returned untouched, and only ungrounded snapshots of it are recorded.
+
+  :param sink: Caller-owned list that receives StageRecords.
+  :return: wrap(original) returning the replacement callable.
+  """
+
+  def wrap(original: Callable[..., Any]) -> Callable[..., Any]:
+    @functools.wraps(original)
+    def traced_resolve(self, *args, **kwargs):
+      out = original(self, *args, **kwargs)
+      bound = inspect.signature(original).bind(self, *args, **kwargs)
+      bound.apply_defaults()
+      in_data = {
+          'raw_model_text': bound.arguments['input_text'],
+          'flags': _format_flags(self),
+          'suppress_parse_errors': bound.arguments['suppress_parse_errors'],
+      }
+      out_data = {'extractions': snapshot_extractions(out)}
+      sink.append(StageRecord('parse', in_data, out_data))
+      return out
+
+    return traced_resolve
+
+  return wrap
+
+
 def make_stage_wrappers(
     sink: list[StageRecord], config: Mapping[str, Any]
 ) -> dict[str, Callable[[Callable[..., Any]], Callable[..., Any]]]:
@@ -310,6 +360,7 @@ def make_stage_wrappers(
       'chunk': make_chunk_wrapper(sink),
       'prompt': make_prompt_wrapper(sink),
       'model': make_model_wrapper(sink, config['redact_keys']),
+      'parse': make_parse_wrapper(sink),
   }
 
 
