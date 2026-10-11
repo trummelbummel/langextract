@@ -30,6 +30,17 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **CTR-01**: Observation lives only in `scripts/trace_extract.py` — no library API changes and no reusable tracer
 - [x] **CTR-02**: Script does not replace or modify `examples/ollama/demo_ollama.py`
 
+## Practice / library (Phase 7)
+
+Independent of the v1.0 trace script. Practice Task 3 — gold-set evaluation.
+
+### Evaluation
+
+- [x] **EVAL-01**: `evaluate(predicted, gold, ...)` scores lists of `AnnotatedDocument` and returns per-class and micro-averaged precision, recall, and F1
+- [ ] **EVAL-02**: Match requires same `extraction_class` and span IoU ≥ configurable threshold (default 0.5); optional `match_attributes`; unaligned predictions (`char_interval is None`) count as false positives
+- [ ] **EVAL-03**: One-to-one greedy matching so one prediction cannot match two gold items
+- [x] **EVAL-04**: Tests cover perfect match, below/above IoU threshold, class mismatch, duplicates, empty inputs (hand-worked metrics); docs show a short CI regression example
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -52,10 +63,11 @@ Explicitly excluded. Documented to prevent scope creep.
 | Cloud providers, model switch, or provider tour | Locked to local Ollama `gemma3:4b` |
 | Replacing `examples/ollama/demo_ollama.py` | That demo is results/HTML; this script prints stages |
 | `debug=True` as the walkthrough | Truncated unstructured logs; no function-and-file contract |
-| HTML visualization, JSONL save, progress bars, eval harness | Covered elsewhere; not a stage walkthrough |
+| HTML visualization, JSONL save, progress bars | Not a stage walkthrough; gold-set `evaluate` is Phase 7 |
 | Multi-pass, batch APIs, `output_schema`, URL fetch | Not the default Ollama path for this milestone |
 | Multi-chunk or full-document trace in v1 | Volume hides the stage contract; one chunk for v1 |
 | Persisted trace store | Starts a tracer product |
+| Evaluation ABC / LLM-as-judge / document-level evaluator | Premature until a second evaluator exists (Phase 7 uses Protocols + functions) |
 
 ## Traceability
 
@@ -77,13 +89,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STG-09 | Phase 4 | Complete |
 | CTR-01 | Phase 1 | Complete |
 | CTR-02 | Phase 1 | Complete |
+| EVAL-01 | Phase 7 | Complete |
+| EVAL-02 | Phase 7 | Pending |
+| EVAL-03 | Phase 7 | Pending |
+| EVAL-04 | Phase 7 | Complete |
 
 **Coverage:**
 
 - v1 requirements: 14 total
 - Mapped to phases: 14
 - Unmapped: 0 ✓
+- EVAL (Phase 7): 4 total, mapped 4, unmapped 0 ✓
 
 ---
 *Requirements defined: 2026-10-10*
-*Last updated: 2026-10-10 after roadmap creation*
+*Last updated: 2026-10-11 — Phase 7 EVAL-01..04 added*

@@ -177,13 +177,13 @@ Plans:
   - Layering: evaluation imports `core.data` only; core never imports evaluation
   - Suggested plan split (≤150 non-test lines each): (1) metrics (2) criteria + span_iou (3) greedy_match (4) evaluate + doc pairing + docs example + e2e
 
-**Plans:** 5 plans
+**Plans:** 1/5 plans executed
 
 Plans:
 
 **Wave 1**
 
-- [ ] 07-01-PLAN.md — Metrics tracer: ClassScore, prf_from_counts, EvaluationReport + hand-worked P/R/F1
+- [x] 07-01-PLAN.md — Metrics tracer: ClassScore, prf_from_counts, EvaluationReport + hand-worked P/R/F1
 
 **Wave 2** *(blocked on Wave 1)*
 
@@ -211,7 +211,7 @@ Plans:
 | 4. Stage wrappers | 3/3 | Complete    | 2026-10-11 |
 | 5. Live extract & Ollama preflight | 2/2 | In Progress|  |
 | 6. AnnotatedDocument & walkthrough close | 0/TBD | Not started | - |
-| 7. Gold-set evaluation metrics | 0/5 | Not started | - |
+| 7. Gold-set evaluation metrics | 1/5 | In Progress|  |
 
 ## Coverage map
 
