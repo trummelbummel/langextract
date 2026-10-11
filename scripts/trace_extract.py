@@ -21,7 +21,7 @@ Usage:
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 import contextlib
 import dataclasses
 import functools
@@ -463,7 +463,7 @@ def _identity_wrap_return(
 ) -> Callable[..., Any]:
   """Passthrough that returns the original result (chunk/prompt/parse)."""
 
-  def identity(self, *args, **kwargs):
+  def identity(self: Any, *args: Any, **kwargs: Any) -> Any:
     return original(self, *args, **kwargs)
 
   return identity
@@ -474,10 +474,18 @@ def _identity_wrap_yield(
 ) -> Callable[..., Any]:
   """Passthrough that yields each item from the original (model/align)."""
 
-  def identity(self, *args, **kwargs):
+  def identity(self: Any, *args: Any, **kwargs: Any) -> Iterator[Any]:
     yield from original(self, *args, **kwargs)
 
   return identity
+
+
+def _restore_probe_attrs(
+    saved: list[tuple[type, str, Callable[..., Any]]],
+) -> None:
+  """Restore class attributes in reverse install order."""
+  for cls, attr, original in reversed(saved):
+    setattr(cls, attr, original)
 
 
 _IDENTITY_WRAP_FACTORIES: dict[
@@ -521,8 +529,7 @@ def trace_probes(
       setattr(cls, attr, factories[label](original))
       saved.append((cls, attr, original))
   except Exception:
-    for cls, attr, original in reversed(saved):
-      setattr(cls, attr, original)
+    _restore_probe_attrs(saved)
     _PROBES_ACTIVE = False
     raise
 
@@ -530,8 +537,7 @@ def trace_probes(
   try:
     yield
   finally:
-    for cls, attr, original in reversed(saved):
-      setattr(cls, attr, original)
+    _restore_probe_attrs(saved)
     _PROBES_ACTIVE = False
 
 
