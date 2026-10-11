@@ -503,12 +503,6 @@ class TraceExtractWrapperTest(parameterized.TestCase):
           message="empty_parse_message",
       ),
       dict(
-          testcase_name="empty_string",
-          canned="",
-          error="Empty or invalid input string",
-          message="empty_parse_message",
-      ),
-      dict(
           testcase_name="fenced_without_use_fences",
           canned='```json\n{"extractions": [{"symptom": "headache"}]}\n```',
           error="Failed to parse JSON content",
@@ -539,12 +533,30 @@ class TraceExtractWrapperTest(parameterized.TestCase):
     for name in other:
       self.assertNotIn(self.config[name].strip(), section)
     self.assertLess(section.index(shown), section.index("\nout:"))
-    if canned:
-      self.assertLess(section.index("raw_model_text"), section.index(shown))
+    self.assertLess(section.index("raw_model_text"), section.index(shown))
     if error:
       self.assertIn(error, section)
     if "```" in canned:
       self.assertIn("use_fences': False", section)
+
+  def test_parse_callout_for_empty_string_reply(self):
+    # The Ollama provider rejects an empty reply before parse, so call the
+    # wrapped Resolver.resolve directly.
+    wrappers = self.trace.make_stage_wrappers(self.sink, self.config)
+    _patch_stages(self, wrappers, ["parse"])
+    parser = resolver.Resolver(format_handler=ollama.OLLAMA_FORMAT_HANDLER)
+
+    result = parser.resolve("", suppress_parse_errors=True)
+
+    self.assertEqual(result, [])
+    self.assertLen(self.sink, 1)
+    self.assertIn(
+        "Empty or invalid input string", self.sink[0].out_data["parse_error"]
+    )
+    printed = self._print_records(self.sink)
+    self.assertIn("  raw_model_text: ''", printed.splitlines())
+    self.assertIn(self.config["empty_parse_message"].strip(), printed)
+    self.assertIn("Empty or invalid input string.", printed)
 
   def test_parse_callout_escapes_control_characters(self):
     section = self._parse_section("café\x1b[31m")

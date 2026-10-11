@@ -315,6 +315,27 @@ def _format_flags(resolver_self: Any) -> dict[str, Any]:
   return flags
 
 
+def _diagnose_empty_parse(
+    original: Callable[..., Any], bound: inspect.BoundArguments
+) -> str | None:
+  """Re-run the original resolve strictly to learn why it returned nothing.
+
+  Calls the unwrapped original (no StageRecord, result discarded) with
+  suppress_parse_errors=False.
+
+  :param original: The unwrapped Resolver.resolve.
+  :param bound: The bound arguments of the traced call, defaults applied.
+  :return: 'ErrorType: message' when strict resolve raises, else None.
+  """
+  strict = inspect.BoundArguments(bound.signature, dict(bound.arguments))
+  strict.arguments['suppress_parse_errors'] = False
+  try:
+    original(*strict.args, **strict.kwargs)
+  except Exception as e:  # pylint: disable=broad-exception-caught
+    return f'{type(e).__name__}: {e}'
+  return None
+
+
 def make_parse_wrapper(
     sink: list[StageRecord],
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
@@ -339,6 +360,10 @@ def make_parse_wrapper(
           'suppress_parse_errors': bound.arguments['suppress_parse_errors'],
       }
       out_data = {'extractions': snapshot_extractions(out)}
+      if not out:
+        out_data['parse_error'] = _diagnose_empty_parse(original, bound)
+      else:
+        out_data['parse_error'] = None
       sink.append(StageRecord('parse', in_data, out_data))
       return out
 
@@ -384,15 +409,22 @@ def _print_block(title: str, payload: Mapping[str, Any]) -> None:
       print(f'  {key}: {pprint.pformat(value)}')
 
 
+def _parse_callout(parse_error: str | None, config: Mapping[str, Any]) -> str:
+  """Pick the callout line for an empty parse from config sentences."""
+  if parse_error is None:
+    return f"callout: {config['empty_list_message'].strip()}"
+  message = config['empty_parse_message'].strip()
+  return f'callout: {message}\n  error: {_safe_text(parse_error)}'
+
+
 def print_stage_records(
     records: Iterable[StageRecord], config: Mapping[str, Any]
 ) -> None:
   """Print captured stages in catalog order with in:/out: blocks.
 
   :param records: Records collected by the stage wrappers, in capture order.
-  :param config: Config mapping; later plans read stage messages from it.
+  :param config: Config mapping providing the empty-parse callout sentences.
   """
-  del config  # Read by later plans (empty-parse and offset captions).
   by_label: dict[str, list[StageRecord]] = {}
   for record in records:
     by_label.setdefault(record.label, []).append(record)
@@ -406,6 +438,8 @@ def print_stage_records(
     print(f'[{label}] {function_name} — {path}')
     for record in by_label[label]:
       _print_block('in', record.in_data)
+      if label == 'parse' and not record.out_data['extractions']:
+        print(_parse_callout(record.out_data['parse_error'], config))
       _print_block('out', record.out_data)
 
 

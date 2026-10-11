@@ -7,6 +7,10 @@ provider: OllamaLanguageModel
 empty_parse_message: >
   Chunk omitted on parse or schema error; raw model text is kept above.
 
+# Printed under [parse] when the model returned a valid empty extraction list
+empty_list_message: >
+  Model returned a valid empty extraction list; nothing was omitted.
+
 # Align-side marker for extractions Resolver.align could not ground
 ungrounded_label: ungrounded
 
