@@ -375,6 +375,70 @@ class TraceExtractWrapperTest(absltest.TestCase):
         {"max_workers": 10, "api_key": "<REDACTED>"},
     )
 
+  def test_chunk_wrapper_yields_same_chunks_without_recursion(self):
+    original = chunking.ChunkIterator.__dict__["__iter__"]
+    # Registered first, so it runs after the patch is undone.
+    self.addCleanup(
+        lambda: self.assertIs(
+            chunking.ChunkIterator.__dict__["__iter__"], original
+        )
+    )
+    wrappers = self.trace.make_stage_wrappers(self.sink, self.config)
+    _patch_stages(self, wrappers, ["chunk"])
+    chunk_iter = chunking.ChunkIterator(text=_SOURCE_TEXT, max_char_buffer=1000)
+
+    chunks = list(iter(chunk_iter))
+
+    self.assertLen(chunks, 1)
+    self.assertLen(self.sink, 1)
+    record = self.sink[0]
+    self.assertEqual(record.label, "chunk")
+    self.assertEqual(
+        record.in_data,
+        {"max_char_buffer": 1000, "document_text": _SOURCE_TEXT},
+    )
+    self.assertEqual(record.out_data["chunk_text"], chunks[0].chunk_text)
+    self.assertEqual(record.out_data["chunk_text"], _SOURCE_TEXT)
+    self.assertEqual(record.out_data["char_interval"], (0, len(_SOURCE_TEXT)))
+    self.assertLen(record.out_data["token_interval"], 2)
+    self.assertIsInstance(record.out_data["token_interval"][0], int)
+    self.assertIsInstance(record.out_data["document_id"], str)
+
+  def _run_traced_extract(self, labels):
+    wrappers = self.trace.make_stage_wrappers(self.sink, self.config)
+    _patch_stages(self, wrappers, labels)
+    return _run_offline_extract(self, _CANNED)
+
+  def test_prompt_record_matches_model_batch_prompt_from_offline_extract(self):
+    _, calls = self._run_traced_extract(["chunk", "prompt", "model"])
+
+    by_label = {r.label: r for r in self.sink}
+    self.assertEqual(calls, 1)
+    self.assertCountEqual(
+        [r.label for r in self.sink], ["chunk", "prompt", "model"]
+    )
+    self.assertEqual(
+        by_label["prompt"].out_data["prompt"],
+        by_label["model"].in_data["batch_prompts"][0],
+    )
+    self.assertEqual(
+        by_label["prompt"].in_data["chunk_text"],
+        by_label["chunk"].out_data["chunk_text"],
+    )
+    self.assertIn("additional_context", by_label["prompt"].in_data)
+    self.assertIsNone(by_label["prompt"].in_data["additional_context"])
+
+  def test_print_stage_records_orders_chunk_prompt_model_from_extract(self):
+    self._run_traced_extract(["chunk", "prompt", "model"])
+
+    printed = self._print_records(list(reversed(self.sink)))
+
+    chunk_at = printed.index("[chunk] ChunkIterator — langextract/chunking.py")
+    prompt_at = printed.index("[prompt] ContextAwarePromptBuilder.build_prompt")
+    model_at = printed.index("[model] OllamaLanguageModel.infer")
+    self.assertLess(chunk_at, prompt_at)
+    self.assertLess(prompt_at, model_at)
+
 
 if __name__ == "__main__":
   absltest.main()
