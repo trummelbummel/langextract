@@ -449,5 +449,226 @@ class EvaluateTracerTest(parameterized.TestCase):
     self.assertTrue(callable(lx.evaluation.evaluate))
 
 
+class EvaluateE2ETest(parameterized.TestCase):
+  """RESEARCH hand-worked evaluate matrix + convenience flags (EVAL-02/04)."""
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name="perfect",
+          gold_extractions=[_extraction("A", 0, 5)],
+          pred_extractions=[_extraction("A", 0, 5)],
+          precision=1.0,
+          recall=1.0,
+          f1=1.0,
+      ),
+      dict(
+          testcase_name="below_threshold",
+          gold_extractions=[_extraction("A", 0, 10)],
+          pred_extractions=[_extraction("A", 8, 18)],
+          precision=0.0,
+          recall=0.0,
+          f1=0.0,
+      ),
+      dict(
+          testcase_name="above_threshold",
+          gold_extractions=[_extraction("A", 0, 10)],
+          pred_extractions=[_extraction("A", 2, 10)],
+          precision=1.0,
+          recall=1.0,
+          f1=1.0,
+      ),
+      dict(
+          testcase_name="class_mismatch",
+          gold_extractions=[_extraction("A", 0, 5)],
+          pred_extractions=[_extraction("B", 0, 5)],
+          precision=0.0,
+          recall=0.0,
+          f1=0.0,
+      ),
+      dict(
+          testcase_name="duplicate_preds",
+          gold_extractions=[_extraction("A", 0, 5)],
+          pred_extractions=[
+              _extraction("A", 0, 5),
+              _extraction("A", 0, 5),
+          ],
+          precision=0.5,
+          recall=1.0,
+          f1=2.0 / 3.0,
+      ),
+      dict(
+          testcase_name="empty_both",
+          gold_extractions=[],
+          pred_extractions=[],
+          precision=0.0,
+          recall=0.0,
+          f1=0.0,
+      ),
+      dict(
+          testcase_name="unaligned_pred",
+          gold_extractions=[_extraction("A", 0, 5)],
+          pred_extractions=[
+              _extraction("A", None, None, interval=None),
+          ],
+          precision=0.0,
+          recall=0.0,
+          f1=0.0,
+      ),
+  )
+  def test_hand_worked_micro(
+      self, gold_extractions, pred_extractions, precision, recall, f1
+  ):
+    from langextract.evaluation import evaluate
+
+    predicted = [_annotated_doc("d1", list(pred_extractions))]
+    gold = [_annotated_doc("d1", list(gold_extractions))]
+    report = evaluate(predicted, gold)
+    self.assertEqual(report.micro.precision, precision)
+    self.assertEqual(report.micro.recall, recall)
+    self.assertAlmostEqual(report.micro.f1, f1, places=7)
+
+  def test_micro_vs_per_class_two_class_row(self):
+    from langextract.evaluation import evaluate
+
+    predicted = [
+        _annotated_doc(
+            "d1",
+            [_extraction("A", 0, 5), _extraction("B", 20, 25)],
+        )
+    ]
+    gold = [
+        _annotated_doc(
+            "d1",
+            [_extraction("A", 0, 5), _extraction("B", 10, 15)],
+        )
+    ]
+    report = evaluate(predicted, gold)
+    self.assertEqual(report.micro.precision, 0.5)
+    self.assertEqual(report.micro.recall, 0.5)
+    self.assertEqual(report.micro.f1, 0.5)
+    self.assertEqual(report.per_class["A"].precision, 1.0)
+    self.assertEqual(report.per_class["A"].recall, 1.0)
+    self.assertEqual(report.per_class["A"].f1, 1.0)
+    self.assertEqual(report.per_class["B"].precision, 0.0)
+    self.assertEqual(report.per_class["B"].recall, 0.0)
+    self.assertEqual(report.per_class["B"].f1, 0.0)
+
+  def test_match_attributes_true_rejects_unequal_attributes(self):
+    from langextract.evaluation import evaluate
+
+    predicted = [
+        _annotated_doc(
+            "d1",
+            [_extraction("A", 0, 5, attributes={"role": "speaker"})],
+        )
+    ]
+    gold = [
+        _annotated_doc(
+            "d1",
+            [_extraction("A", 0, 5, attributes={"role": "listener"})],
+        )
+    ]
+    report = evaluate(predicted, gold, match_attributes=True)
+    self.assertEqual(report.micro.precision, 0.0)
+    self.assertEqual(report.micro.recall, 0.0)
+    self.assertEqual(report.micro.f1, 0.0)
+
+  def test_match_attributes_true_accepts_equal_attributes(self):
+    from langextract.evaluation import evaluate
+
+    attrs = {"role": "speaker"}
+    predicted = [
+        _annotated_doc("d1", [_extraction("A", 0, 5, attributes=attrs)])
+    ]
+    gold = [
+        _annotated_doc(
+            "d1", [_extraction("A", 0, 5, attributes={"role": "speaker"})]
+        )
+    ]
+    report = evaluate(predicted, gold, match_attributes=True)
+    self.assertEqual(report.micro.precision, 1.0)
+    self.assertEqual(report.micro.recall, 1.0)
+    self.assertEqual(report.micro.f1, 1.0)
+
+  def test_text_eval_func_reject_yields_zeros(self):
+    from langextract.evaluation import evaluate
+
+    predicted = [_annotated_doc("d1", [_extraction("A", 0, 5, text="Romeo")])]
+    gold = [_annotated_doc("d1", [_extraction("A", 0, 5, text="Juliet")])]
+    report = evaluate(
+        predicted, gold, text_eval_func=lambda left, right: left == right
+    )
+    self.assertEqual(report.micro.precision, 0.0)
+    self.assertEqual(report.micro.recall, 0.0)
+    self.assertEqual(report.micro.f1, 0.0)
+
+  def test_text_eval_func_accept_yields_ones(self):
+    from langextract.evaluation import evaluate
+
+    predicted = [_annotated_doc("d1", [_extraction("A", 0, 5, text="Romeo")])]
+    gold = [_annotated_doc("d1", [_extraction("A", 0, 5, text="romeo")])]
+    report = evaluate(
+        predicted,
+        gold,
+        text_eval_func=lambda left, right: left.lower() == right.lower(),
+    )
+    self.assertEqual(report.micro.precision, 1.0)
+    self.assertEqual(report.micro.recall, 1.0)
+    self.assertEqual(report.micro.f1, 1.0)
+
+
+class EvaluateConfigTest(parameterized.TestCase):
+  """XOR criteria vs convenience flags and document_id errors (D-04 / A2)."""
+
+  def test_criteria_with_nondefault_iou_threshold_raises(self):
+    from langextract.evaluation import evaluate
+    from langextract.evaluation import SameClass
+    from langextract.evaluation import SpanIoU
+
+    predicted = [_annotated_doc("d1", [_extraction("A", 0, 5)])]
+    gold = [_annotated_doc("d1", [_extraction("A", 0, 5)])]
+    with self.assertRaisesRegex(ValueError, r"(?i)criteria|mutually|exclusive"):
+      evaluate(
+          predicted,
+          gold,
+          criteria=[SameClass(), SpanIoU(0.5)],
+          iou_threshold=0.9,
+      )
+
+  def test_criteria_with_match_attributes_raises(self):
+    from langextract.evaluation import evaluate
+    from langextract.evaluation import SameClass
+    from langextract.evaluation import SpanIoU
+
+    predicted = [_annotated_doc("d1", [_extraction("A", 0, 5)])]
+    gold = [_annotated_doc("d1", [_extraction("A", 0, 5)])]
+    with self.assertRaisesRegex(ValueError, r"(?i)criteria|mutually|exclusive"):
+      evaluate(
+          predicted,
+          gold,
+          criteria=[SameClass(), SpanIoU(0.5)],
+          match_attributes=True,
+      )
+
+  def test_mismatched_document_id_sets_raise(self):
+    from langextract.evaluation import evaluate
+
+    predicted = [_annotated_doc("d1", [_extraction("A", 0, 5)])]
+    gold = [_annotated_doc("d2", [_extraction("A", 0, 5)])]
+    with self.assertRaisesRegex(ValueError, r"d1.*d2|d2.*d1"):
+      evaluate(predicted, gold)
+
+  def test_duplicate_document_id_on_predicted_raises(self):
+    from langextract.evaluation import evaluate
+
+    predicted = [
+        _annotated_doc("d1", [_extraction("A", 0, 5)]),
+        _annotated_doc("d1", [_extraction("A", 0, 5)]),
+    ]
+    gold = [_annotated_doc("d1", [_extraction("A", 0, 5)])]
+    with self.assertRaisesRegex(ValueError, r"(?i)duplicate.*d1|d1"):
+      evaluate(predicted, gold)
+
+
 if __name__ == "__main__":
   absltest.main()

@@ -1,0 +1,9 @@
+{
+  "command": ".venv/bin/python tests/evaluation_test.py EvaluateConfigTest EvaluateE2ETest",
+  "exitCode": 1,
+  "output": "TAP version 13\nnot ok 1 - test_criteria_with_match_attributes_raises\nnot ok 2 - test_criteria_with_nondefault_iou_threshold_raises\nok 3 - test_duplicate_document_id_on_predicted_raises\nok 4 - test_mismatched_document_id_sets_raise\nok 5 - test_hand_worked_micro_above_threshold\nok 6 - test_hand_worked_micro_below_threshold\nok 7 - test_hand_worked_micro_class_mismatch\nok 8 - test_hand_worked_micro_duplicate_preds\nok 9 - test_hand_worked_micro_empty_both\nok 10 - test_hand_worked_micro_perfect\nok 11 - test_hand_worked_micro_unaligned_pred\nok 12 - test_match_attributes_true_accepts_equal_attributes\nok 13 - test_match_attributes_true_rejects_unequal_attributes\nok 14 - test_micro_vs_per_class_two_class_row\nok 15 - test_text_eval_func_accept_yields_ones\nok 16 - test_text_eval_func_reject_yields_zeros\n# tests 16\n# pass 14\n# fail 2\n",
+  "targetTest": "test_criteria_with_nondefault_iou_threshold_raises",
+  "targetFile": "tests/evaluation_test.py",
+  "expected": "evaluate(..., criteria=[SameClass(), SpanIoU(0.5)], iou_threshold=0.9) raises ValueError (XOR / D-04)",
+  "actual": "AssertionError: ValueError not raised"
+}
