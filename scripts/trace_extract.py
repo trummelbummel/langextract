@@ -511,7 +511,8 @@ def trace_probes(
   entry is rejected while probes are active.
 
   :param wrappers: Optional original->replacement factories keyed by catalog
-    label. Missing labels fall back to identity passthroughs.
+    label (chunk/prompt/model/parse/align). Missing labels fall back to
+    identity passthroughs. Unknown keys raise ValueError.
   """
   global _PROBES_ACTIVE
   if _PROBES_ACTIVE:
@@ -520,6 +521,11 @@ def trace_probes(
   targets = _load_probe_targets()
   factories = dict(_IDENTITY_WRAP_FACTORIES)
   if wrappers:
+    unknown = set(wrappers) - set(_IDENTITY_WRAP_FACTORIES)
+    if unknown:
+      raise ValueError(
+          'unknown wrapper label(s): ' + ', '.join(sorted(unknown))
+      )
     factories.update(wrappers)
 
   saved: list[tuple[type, str, Callable[..., Any]]] = []
