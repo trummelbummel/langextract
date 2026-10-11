@@ -1,0 +1,9 @@
+{
+  "command": ".venv/bin/python tests/evaluation_test.py",
+  "exitCode": 1,
+  "output": "TAP version 13\nnot ok 1 - test_attributes_equal_both_none\nnot ok 2 - test_attributes_equal_false_none_vs_empty_dict\nnot ok 3 - test_attributes_equal_false_when_values_differ\nnot ok 4 - test_attributes_equal_same_dicts\nnot ok 5 - test_text_match_delegates_to_injected_callable\nnot ok 6 - test_text_match_returns_false_when_fn_rejects\nok 7 - test_span_iou_perfect_identical\n# tests 28\n# pass 22\n# fail 6\n",
+  "targetTest": "test_text_match_delegates_to_injected_callable",
+  "targetFile": "tests/evaluation_test.py",
+  "expected": "TextMatch(fn)(Romeo, romeo) → True via case-insensitive fn(pred.extraction_text, gold.extraction_text)",
+  "actual": "ImportError: cannot import name 'TextMatch' from 'langextract.evaluation'"
+}

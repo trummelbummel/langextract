@@ -256,5 +256,59 @@ class CriteriaSpanIoUTest(parameterized.TestCase):
     self.assertEqual(SpanIoU(threshold)(pred, gold), expected)
 
 
+class CriteriaOptionalTest(parameterized.TestCase):
+  """AttributesEqual and TextMatch(fn) injection (EVAL-02 / D-02)."""
+
+  def test_attributes_equal_both_none(self):
+    from langextract.evaluation import AttributesEqual
+
+    pred = _extraction("A", 0, 5, attributes=None)
+    gold = _extraction("A", 0, 5, attributes=None)
+    self.assertTrue(AttributesEqual()(pred, gold))
+
+  def test_attributes_equal_same_dicts(self):
+    from langextract.evaluation import AttributesEqual
+
+    attrs = {"role": "speaker"}
+    pred = _extraction("A", 0, 5, attributes=attrs)
+    gold = _extraction("A", 10, 15, attributes={"role": "speaker"})
+    self.assertTrue(AttributesEqual()(pred, gold))
+
+  def test_attributes_equal_false_when_values_differ(self):
+    from langextract.evaluation import AttributesEqual
+
+    pred = _extraction("A", 0, 5, attributes={"role": "speaker"})
+    gold = _extraction("A", 0, 5, attributes={"role": "listener"})
+    self.assertFalse(AttributesEqual()(pred, gold))
+
+  def test_attributes_equal_false_none_vs_empty_dict(self):
+    from langextract.evaluation import AttributesEqual
+
+    pred = _extraction("A", 0, 5, attributes=None)
+    gold = _extraction("A", 0, 5, attributes={})
+    self.assertFalse(AttributesEqual()(pred, gold))
+
+  def test_text_match_delegates_to_injected_callable(self):
+    from langextract.evaluation import TextMatch
+
+    calls: list[tuple[str, str]] = []
+
+    def fn(predicted_text: str, gold_text: str) -> bool:
+      calls.append((predicted_text, gold_text))
+      return predicted_text.lower() == gold_text.lower()
+
+    pred = _extraction("A", 0, 5, text="Romeo")
+    gold = _extraction("A", 0, 5, text="romeo")
+    self.assertTrue(TextMatch(fn)(pred, gold))
+    self.assertEqual(calls, [("Romeo", "romeo")])
+
+  def test_text_match_returns_false_when_fn_rejects(self):
+    from langextract.evaluation import TextMatch
+
+    pred = _extraction("A", 0, 5, text="Romeo")
+    gold = _extraction("A", 0, 5, text="Juliet")
+    self.assertFalse(TextMatch(lambda a, b: a == b)(pred, gold))
+
+
 if __name__ == "__main__":
   absltest.main()
