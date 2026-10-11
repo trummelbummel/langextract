@@ -22,6 +22,7 @@ Usage:
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
+import contextlib
 import dataclasses
 import functools
 import inspect
@@ -37,6 +38,7 @@ import yaml
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _CONFIG_PATH = _REPO_ROOT / 'config.yaml'
 _REDACTION_TOKEN = '<REDACTED>'
+_PROBES_ACTIVE = False
 
 # (label, function_name, repo_relative_path)
 STAGE_CATALOG: list[tuple[str, str, str]] = [
@@ -431,6 +433,92 @@ def make_stage_wrappers(
       'parse': make_parse_wrapper(sink),
       'align': make_align_wrapper(sink),
   }
+
+
+def _load_probe_targets() -> dict[str, tuple[type, str]]:
+  """Resolve the five extract call targets (lazy langextract import)."""
+  from langextract import chunking
+  from langextract import prompting
+  from langextract import resolver
+  from langextract.providers import ollama
+
+  return {
+      'chunk': (chunking.ChunkIterator, '__iter__'),
+      'prompt': (prompting.ContextAwarePromptBuilder, 'build_prompt'),
+      'model': (ollama.OllamaLanguageModel, 'infer'),
+      'parse': (resolver.Resolver, 'resolve'),
+      'align': (resolver.Resolver, 'align'),
+  }
+
+
+def _identity_wrap_return(
+    original: Callable[..., Any],
+) -> Callable[..., Any]:
+  """Passthrough that returns the original result (chunk/prompt/parse)."""
+
+  def identity(self, *args, **kwargs):
+    return original(self, *args, **kwargs)
+
+  return identity
+
+
+def _identity_wrap_yield(
+    original: Callable[..., Any],
+) -> Callable[..., Any]:
+  """Passthrough that yields each item from the original (model/align)."""
+
+  def identity(self, *args, **kwargs):
+    yield from original(self, *args, **kwargs)
+
+  return identity
+
+
+_IDENTITY_WRAP_FACTORIES: dict[
+    str, Callable[[Callable[..., Any]], Callable[..., Any]]
+] = {
+    'chunk': _identity_wrap_return,
+    'prompt': _identity_wrap_return,
+    'model': _identity_wrap_yield,
+    'parse': _identity_wrap_return,
+    'align': _identity_wrap_yield,
+}
+
+
+@contextlib.contextmanager
+def trace_probes(
+    wrappers: (
+        Mapping[str, Callable[[Callable[..., Any]], Callable[..., Any]]] | None
+    ) = None,
+):
+  """Install call-scoped identity (or supplied) wraps on extract targets.
+
+  Restores every class attribute in finally, including on exception. Nested
+  entry is rejected while probes are active.
+
+  :param wrappers: Optional original->replacement factories keyed by catalog
+    label. Missing labels fall back to identity passthroughs.
+  """
+  global _PROBES_ACTIVE
+  if _PROBES_ACTIVE:
+    raise RuntimeError('trace_probes() already active')
+
+  targets = _load_probe_targets()
+  factories = dict(_IDENTITY_WRAP_FACTORIES)
+  if wrappers:
+    factories.update(wrappers)
+
+  saved: list[tuple[type, str, Callable[..., Any]]] = []
+  try:
+    for label, (cls, attr) in targets.items():
+      original = cls.__dict__[attr]
+      setattr(cls, attr, factories[label](original))
+      saved.append((cls, attr, original))
+    _PROBES_ACTIVE = True
+    yield
+  finally:
+    for cls, attr, original in reversed(saved):
+      setattr(cls, attr, original)
+    _PROBES_ACTIVE = False
 
 
 def _print_block(title: str, payload: Mapping[str, Any]) -> None:

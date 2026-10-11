@@ -759,17 +759,21 @@ class TraceExtractProbeTest(absltest.TestCase):
       )
 
   def test_trace_probes_identity_passthrough_no_side_effects(self):
-    examples = [
-        data.ExampleData(
-            "He has a cough.", [data.Extraction("symptom", "cough")]
-        )
-    ]
     template = prompting.PromptTemplateStructured(
-        description="Extract symptoms.", examples=examples
+        description="Extract symptoms.",
+        examples=[
+            data.ExampleData(
+                text="He has a cough.",
+                extractions=[data.Extraction("symptom", "cough")],
+            )
+        ],
     )
-    builder = prompting.ContextAwarePromptBuilder(template)
+    generator = prompting.QAPromptGenerator(
+        template=template,
+        format_handler=ollama.OLLAMA_FORMAT_HANDLER,
+    )
+    builder = prompting.ContextAwarePromptBuilder(generator)
     parser = resolver.Resolver(format_handler=ollama.OLLAMA_FORMAT_HANDLER)
-    resolved = parser.resolve(_CANNED, suppress_parse_errors=True)
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
       with self.trace.trace_probes():
@@ -793,10 +797,10 @@ class TraceExtractProbeTest(absltest.TestCase):
         model = ollama.OllamaLanguageModel(
             model_id="gemma3:4b",
             model_url="http://localhost:11434",
-            format_type=data.FormatType.JSON,
+            format_type=core_types.FormatType.JSON,
         )
 
-        def fake_query(self, prompt_text, **kwargs):
+        def fake_query(self, prompt, **kwargs):
           return {"response": _CANNED}
 
         with mock.patch.object(
