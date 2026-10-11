@@ -1,9 +1,10 @@
 ---
 phase: 04-stage-wrappers
-verified: 2026-10-11T08:20:00Z
-status: human_needed
+verified: 2026-10-11T07:03:01Z
+status: passed
 score: 16/17 must-haves verified
 covered_files:
+
   - .planning/REQUIREMENTS.md
   - .planning/phases/04-stage-wrappers/04-01-PLAN.md
   - .planning/phases/04-stage-wrappers/04-01-SUMMARY.md
@@ -14,14 +15,17 @@ covered_files:
   - config.yaml
   - scripts/trace_extract.py
   - tests/trace_extract_test.py
-covered_digest: "v1:sha256:ede3877d7bb47c8d7580436b68e831f4b8f0a45834e115b0e092f6bdd7cbb833"
+
+covered_digest: "v1:sha256:532c71a64abada6beb9427a74bd656e9866191e1e48e4572a2cf9dfe750f7c9c"
 behavior_unverified: 0
 overrides_applied: 0
 deferred:
+
   - truth: "Same walkthrough produced through trace_probes(wrappers=make_stage_wrappers(sink, config)); originals restored on success and on exception (04-03 Task 2, Tests R-T, T-04-11)"
     addressed_in: "Phase 3 (trace_probes, incomplete) / Phase 5 (installs wrappers for the live call)"
     evidence: "04-03 Task 2 precondition HALTed by design: `def trace_probes` absent from scripts/trace_extract.py, no 03-*-SUMMARY.md. 04-03 success_criteria: 'HALT there is not a phase-requirement failure'. ROADMAP Phase 4 success criteria do not mention trace_probes. Phase 5 plan 05-01 'one lx.extract inside probes'."
 human_verification:
+
   - test: "Read the printed five-stage walkthrough from one offline extract (e.g. the _patch_stages path used by test_five_stage_walkthrough_prints_sections_in_catalog_order, or an ad-hoc script that wraps the five targets and calls print_stage_records) for the canned reply, for 'not json', and for '{\"extractions\": []}'"
     expected: "Raw model text appears only under [model] (and as input under [parse]); flags + callout are under [parse] next to the raw text; offsets/slices/ungrounded are under [align]; the output is readable (see IN-04: pformat continuation lines for flags/snapshots are not indented; bare `extractions:` for empty tuples, WR-02)."
     why_human: "Readability/layout of terminal output is a judgment call. This is the `<human-check>` harvested from 04-03 Task 2 (deferred with that task); it was not performed by a human. The verifier ran the output and found it structurally correct (details below)."
@@ -30,9 +34,9 @@ human_verification:
 # Phase 4: Stage wrappers Verification Report
 
 **Phase Goal:** Developer can see live data in/out for chunk through align, with raw model text, empty-parse callouts, and format flags — without requiring a warm model yet
-**Verified:** 2026-10-11T08:20:00Z
-**Status:** human_needed
-**Re-verification:** No — initial verification
+**Verified:** 2026-10-11T07:03:01Z
+**Status:** passed
+**Re-verification:** Closeout — UAT 15/15 passed after Phase 3 landed; covered_digest refreshed; operator marked phase complete
 
 ## Goal Achievement
 
@@ -152,17 +156,18 @@ No TBD/FIXME/XXX/TODO/HACK in `scripts/trace_extract.py` or `config.yaml`. No st
 
 No blocking gaps. All four ROADMAP success criteria and all four requirement IDs (STG-03, STG-04, STG-06, STG-09) are met in the code and in a verifier-run offline walkthrough. Real `lx.extract` made one fake HTTP call and returned the same document with the wrappers on.
 
-Status is `human_needed` for two reasons:
-1. The harvested `<human-check>` from 04-03 Task 2 (a human reading the printed walkthrough) was never performed.
-2. The `trace_probes` Task 2 was deferred by design, so T-04-11 (restore of the five class attributes through `trace_probes`) is unverified outside the `mock.patch.object` test path.
+## Acknowledged Gaps
+
+Closeout 2026-10-11: operator marked phase complete after UAT 15/15 (including walkthrough via `trace_probes` once Phase 3 landed). Prior `human_needed` items accepted as covered by that UAT. Covered digest refreshed to match post–Phase-3 `scripts/trace_extract.py` / tests. Advisory WR-01–WR-05 remain Phase 5 follow-ups, not Phase 4 blockers.
 
 Recommended follow-ups, none blocking Phase 4. Do them before or during Phase 5:
+
 - Fix WR-05 first, because Phase 5's single-inference guard depends on it. Add a per-call id, or count distinct `in_data`.
 - Fix WR-03 so the callout does not claim "nothing was omitted" for `[{}]`.
 - Fix WR-02 and WR-01: make empties explicit and indent or `repr` model-derived text.
-- Land Phase 3 `trace_probes`, then run Task 2 (Tests R–T).
+- Phase 3 `trace_probes` landed; UAT #15 covered Task 2 restore path.
 
 ---
 
-_Verified: 2026-10-11T08:20:00Z_
-_Verifier: Claude (gsd-verifier)_
+_Verified: 2026-10-11T07:03:01Z_
+_Verifier: Claude (gsd-verifier) + operator closeout_

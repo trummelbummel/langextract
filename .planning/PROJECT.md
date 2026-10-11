@@ -20,12 +20,14 @@ You can follow one `lx.extract()` call from the prompt through to an `AnnotatedD
 - ✓ Extractions are aligned back to character spans in the source — existing (`Resolver.align` / `WordAligner` in `langextract/resolver.py`)
 - ✓ The public result is an `AnnotatedDocument` — existing (`langextract/core/data.py`)
 - ✓ Stage catalog prints ordered labels plus owning function/file and a static call header from `config.yaml` — Phase 1 (`scripts/trace_extract.py`, repo-root `config.yaml`)
+- ✓ Call-scoped probes install and restore five class wraps — Phase 3
+- ✓ Stage wrappers record live in/out for chunk → prompt → model → parse → align (offline), with raw model text, empty-parse callouts, and format flags — Phase 4
 
 ### Active
 
 - [ ] A small script runs one `lx.extract()` call using local Ollama `gemma3:4b`
-- [ ] The script prints a walkthrough of prompting, chunking, the model call, parsing, alignment (source grounding), and `AnnotatedDocument` (live data in/out — Phases 2–6)
-- [ ] Each stage shows the data going in and out (owners/files already printed in Phase 1)
+- [ ] The script prints a walkthrough through `AnnotatedDocument` on a live call (Phases 5–6)
+- [ ] Production path installs stage wrappers via `trace_probes` for the live extract
 
 ### Out of Scope
 
@@ -62,6 +64,7 @@ The codebase map in `.planning/codebase/` (refreshed 2026-10-09) is the referenc
 | Chunk identity returns the iterator object; model/align use `yield from` | `ChunkIterator.__iter__` returns `self` — yield-from would recurse | Shipped Phase 3 |
 | Optional `wrappers=` map keyed by catalog labels; unknown keys → `ValueError` | Phase 4 `make_stage_wrappers` contract; partial maps fill with identity | Shipped Phase 3 |
 | In-script restore self-check after catalog (silent / stderr + exit 1) | Proves exception-path restore on every catalog run without calling `lx.extract` | Shipped Phase 3 |
+| Offline `_patch_stages` / `lx.extract` for Phase 4 verification; live install in Phase 5 | Phase 4 goal is warm-model-free; probes land in Phase 3 | Shipped Phase 4 (UAT 15/15) |
 
 ## Evolution
 
@@ -81,4 +84,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-11 after Phase 3*
+*Last updated: 2026-10-11 after Phase 4*

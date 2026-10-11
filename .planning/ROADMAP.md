@@ -13,7 +13,7 @@ Build `scripts/trace_extract.py` — a one-call printed walkthrough of `lx.extra
 - [x] **Phase 1: Stage catalog & contracts** - Script skeleton with stable stage labels, owners, and script-only boundaries (completed 2026-10-10)
 - [x] **Phase 2: Extraction snapshots** - Field copies that keep parse (ungrounded) distinct from align (grounded) (completed 2026-10-10)
 - [x] **Phase 3: Call-scoped probe manager** - Install and restore five class wraps in `finally` before any live call (completed 2026-10-11)
-- [ ] **Phase 4: Stage wrappers** - Capture chunk → prompt → infer → resolve → align with live in/out records
+- [x] **Phase 4: Stage wrappers** - Capture chunk → prompt → infer → resolve → align with live in/out records (completed 2026-10-11)
 - [ ] **Phase 5: Live extract & Ollama preflight** - One `lx.extract()` against `gemma3:4b` with clear preflight failure
 - [ ] **Phase 6: AnnotatedDocument & walkthrough close** - Print the returned document and verify the full stage dump
 
@@ -101,7 +101,7 @@ Plans:
   3. Align-stage output shows spans, status, chunk offsets (even when 0), and source slice or `ungrounded`
   4. Empty parse is called out in words next to the raw model text, and parse inputs include format/fence/wrapper flags
 
-**Plans:** 3/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 1**
@@ -114,7 +114,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [x] 04-03-PLAN.md — Align wrapper with offsets/slices/ungrounded; five-stage walkthrough; trace_probes integration (needs Phase 3) — Task 1 done; **Task 2 (trace_probes integration) deferred, blocked on Phase 3**
+- [x] 04-03-PLAN.md — Align wrapper with offsets/slices/ungrounded; five-stage walkthrough; trace_probes integration (Phase 3 landed; UAT covered restore path)
 
 ### Phase 5: Live extract & Ollama preflight
 
@@ -160,8 +160,8 @@ Plans:
 | 1. Stage catalog & contracts | 2/2 | Complete    | 2026-10-10 |
 | 2. Extraction snapshots | 2/2 | Complete    | 2026-10-10 |
 | 3. Call-scoped probe manager | 2/2 | Complete    | 2026-10-11 |
-| 4. Stage wrappers | 3/3 | In Progress|  |
-| 5. Live extract & Ollama preflight | 0/TBD | Not started | - |
+| 4. Stage wrappers | 3/3 | Complete    | 2026-10-11 |
+| 5. Live extract & Ollama preflight | 0/2 | In progress | - |
 | 6. AnnotatedDocument & walkthrough close | 0/TBD | Not started | - |
 
 ## Coverage map

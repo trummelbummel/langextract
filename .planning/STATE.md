@@ -2,21 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: MVP
-current_phase: 04
-current_phase_name: Stage wrappers
-current_plan: Not started
-status: planning
-stopped_at: Phase 03 complete, ready to plan Phase 04
-last_updated: "2026-10-11T06:55:36.660Z"
+current_phase: 05
+current_phase_name: Live extract & Ollama preflight
+current_plan: 1
+status: executing
+stopped_at: Phase 4 complete; Phase 05 execution in progress (plans 05-01/05-02 present)
+last_updated: "2026-10-11T07:04:19.239Z"
 last_activity: 2026-10-11
-last_activity_desc: Phase 03 complete, transitioned to Phase 04
-state_head: 0458b1d840fc6dae92abc2b8c8c8e1af9ff9c462
+state_head: 7ccfea4bcd21391a31421f1979891b2bb4f0e08a
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 11
   completed_plans: 9
-  percent: 50
+last_activity_desc: Phase 4 complete; resumed Phase 05 execution position
 ---
 
 # Project State
@@ -26,23 +25,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-11)
 
 **Core value:** You can follow one `lx.extract()` call from the prompt through to an `AnnotatedDocument` and see which function owns each stage.
-**Current focus:** Phase 04 — Stage wrappers (finish deferred 04-03 Task 2: `trace_probes` integration)
+**Current focus:** Phase 05 — Live extract & Ollama preflight
 
 ## Current Position
 
-Phase: 04 — Stage wrappers
-Current Plan: Not started
+Phase: 05 (Live extract & Ollama preflight) — EXECUTING
+Current Plan: 1
 Total Plans in Phase: 2
-Status: Ready to plan
-Last activity: 2026-10-11 — Phase 03 complete, transitioned to Phase 04
+Status: Executing Phase 05
+Last activity: 2026-10-11
 
-Progress: [█████░░░░░] 50%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 8
+- Total plans completed: 11
 - Average duration: 2.5min
 - Total execution time: 0.08 hours
 
@@ -54,6 +53,7 @@ Progress: [█████░░░░░] 50%
 | 1 | 2 | - | - |
 | 2 | 2 | - | - |
 | 03 | 2 | - | - |
+| 4 | 3 | - | - |
 
 **Recent Trend:**
 
@@ -95,7 +95,8 @@ Recent decisions affecting current work:
 - [Phase 02]: Snapshots are duck-typed field copies (attributes copied one level deep, no deepcopy); helpers not wired into main() until Phase 4 — Resolver.align mutates resolve's objects in place; parse record must be copied at resolve return
 - [Phase 04]: [Phase 04-01]: make_stage_wrappers keys are catalog labels with original->replacement values; model records are one per ScoredOutput with prompt_index (0-based yield position per infer call) and batch_size
 - [Phase 04]: 04-02: parse record = in{raw_model_text,flags,suppress_parse_errors} out{extractions,parse_error}; callout picks empty_parse_message (error str) vs empty_list_message (None) from config
-- [Phase 04]: 04-03: Task 2 (trace_probes walkthrough) deferred; blocked on Phase 3 (trace_probes missing). Align wrapper + [align] printer done via _patch_stages.
+- [Phase 04]: Offline five-stage wrappers + printers (chunk→align); empty-parse callouts; UAT 15/15 after Phase 3 `trace_probes` landed
+- [Phase 04]: Advisory WR-01–WR-05 (prompt_index guard, empty-list callout truth, print layout) deferred to Phase 5
 - [Phase 03]: Chunk identity returns original iterator (ChunkIterator.__iter__ returns self)
 - [Phase 03]: Model/align identity use yield from; prompt/parse use return; no functools.wraps
 - [Phase 03]: _PROBE_TARGETS populated lazily so catalog import stays light
@@ -109,7 +110,7 @@ None yet.
 ### Blockers/Concerns
 
 - Phase 5 needs local Ollama serving `gemma3:4b` (cold-load timeout to validate on this machine)
-- Phase 4 should re-check live method signatures before wrapping generators
+- Phase 5 single-inference guard must not rely on `prompt_index == 0` alone (WR-05)
 
 ## Deferred Items
 
@@ -122,5 +123,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-10-11
-Stopped at: Phase 03 complete; Phase 04 plans exist with deferred 04-03 Task 2 (trace_probes) now unblocked
+Stopped at: Phase 4 complete; Phase 05 execution in progress (plans 05-01/05-02 present)
 Resume file: None
