@@ -1,0 +1,9 @@
+{
+  "command": ".venv/bin/python tests/evaluation_test.py",
+  "exitCode": 1,
+  "output": "TAP version 13\nok 1 - test_class_score_is_frozen\nok 2 - test_prf_from_counts_duplicate_pred_half_precision\nok 3 - test_prf_from_counts_empty_all_zero\nok 4 - test_prf_from_counts_fn_only_zero_rates\nok 5 - test_prf_from_counts_fp_only_zero_rates\nok 6 - test_prf_from_counts_perfect_one_tp\nnot ok 7 - test_evaluation_report_fields_are_per_class_and_micro_only\nnot ok 8 - test_report_from_counts_empty\nnot ok 9 - test_report_from_counts_micro_vs_per_class\n# tests 9\n# pass 6\n# fail 3\n",
+  "targetTest": "test_report_from_counts_micro_vs_per_class",
+  "targetFile": "tests/evaluation_test.py",
+  "expected": "report_from_counts with A(1,0,0)+B(0,1,1) and micro(1,1,1) → A perfect, B zeros, micro 0.5/0.5/0.5, keys sorted A then B",
+  "actual": "ImportError: cannot import name 'report_from_counts' from 'langextract.evaluation'"
+}

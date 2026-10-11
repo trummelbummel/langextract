@@ -89,5 +89,45 @@ class MetricsPrfTest(parameterized.TestCase):
       score.precision = 0.0  # type: ignore[misc]
 
 
+class MetricsReportTest(parameterized.TestCase):
+  """EvaluationReport aggregation from per-class and micro counts (EVAL-01)."""
+
+  def test_report_from_counts_micro_vs_per_class(self):
+    from langextract.evaluation import report_from_counts
+
+    # Insert B before A so alphabetical sort (A then B) is observable.
+    report = report_from_counts(
+        {"B": (0, 1, 1), "A": (1, 0, 0)}, micro=(1, 1, 1)
+    )
+    self.assertEqual(list(report.per_class.keys()), ["A", "B"])
+    a = report.per_class["A"]
+    self.assertEqual(a.precision, 1.0)
+    self.assertEqual(a.recall, 1.0)
+    self.assertEqual(a.f1, 1.0)
+    b = report.per_class["B"]
+    self.assertEqual(b.precision, 0.0)
+    self.assertEqual(b.recall, 0.0)
+    self.assertEqual(b.f1, 0.0)
+    self.assertEqual(report.micro.precision, 0.5)
+    self.assertEqual(report.micro.recall, 0.5)
+    self.assertEqual(report.micro.f1, 0.5)
+
+  def test_report_from_counts_empty(self):
+    from langextract.evaluation import report_from_counts
+
+    report = report_from_counts({}, micro=(0, 0, 0))
+    self.assertEqual(report.per_class, {})
+    self.assertEqual(report.micro.precision, 0.0)
+    self.assertEqual(report.micro.recall, 0.0)
+    self.assertEqual(report.micro.f1, 0.0)
+
+  def test_evaluation_report_fields_are_per_class_and_micro_only(self):
+    from langextract.evaluation import EvaluationReport
+
+    field_names = {f.name for f in dataclasses.fields(EvaluationReport)}
+    self.assertEqual(field_names, {"per_class", "micro"})
+    self.assertNotIn("macro", field_names)
+
+
 if __name__ == "__main__":
   absltest.main()
