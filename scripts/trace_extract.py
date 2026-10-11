@@ -372,6 +372,49 @@ def make_parse_wrapper(
   return wrap
 
 
+def make_align_wrapper(
+    sink: list[StageRecord],
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+  """Build an original -> replacement wrapper for Resolver.align.
+
+  The replacement returns a lazy generator that yields the same Extraction
+  objects; the snapshot is taken in a finally block, so it sees the final
+  grounding and is still written for empty or early-closed generators.
+
+  :param sink: Caller-owned list that receives StageRecords.
+  :return: wrap(original) returning the replacement callable.
+  """
+
+  def wrap(original: Callable[..., Any]) -> Callable[..., Any]:
+    @functools.wraps(original)
+    def traced_align(self, *args, **kwargs):
+      bound = inspect.signature(original).bind(self, *args, **kwargs)
+      bound.apply_defaults()
+      given = bound.arguments
+      in_data = {
+          'source_text': given['source_text'],
+          'token_offset': given['token_offset'],
+          'char_offset': given['char_offset'] or 0,
+          'n_extractions': len(given['extractions']),
+      }
+
+      def traced_outputs():
+        seen = []
+        try:
+          for extraction in original(self, *args, **kwargs):
+            seen.append(extraction)
+            yield extraction
+        finally:
+          out_data = {'extractions': snapshot_extractions(seen)}
+          sink.append(StageRecord('align', in_data, out_data))
+
+      return traced_outputs()
+
+    return traced_align
+
+  return wrap
+
+
 def make_stage_wrappers(
     sink: list[StageRecord], config: Mapping[str, Any]
 ) -> dict[str, Callable[[Callable[..., Any]], Callable[..., Any]]]:
@@ -386,6 +429,7 @@ def make_stage_wrappers(
       'prompt': make_prompt_wrapper(sink),
       'model': make_model_wrapper(sink, config['redact_keys']),
       'parse': make_parse_wrapper(sink),
+      'align': make_align_wrapper(sink),
   }
 
 
@@ -417,6 +461,50 @@ def _parse_callout(parse_error: str | None, config: Mapping[str, Any]) -> str:
   return f'callout: {message}\n  error: {_safe_text(parse_error)}'
 
 
+def _source_slice(
+    source_text: str,
+    snap: ExtractionSnapshot,
+    char_offset: int,
+    ungrounded_label: str,
+) -> str:
+  """Return the grounded source slice as a repr, or ungrounded_label."""
+  if snap.char_interval is None:
+    return ungrounded_label
+  start, end = snap.char_interval
+  return repr(_safe_text(source_text[start - char_offset : end - char_offset]))
+
+
+def _print_align_section(
+    record: StageRecord,
+    parse_record: StageRecord | None,
+    config: Mapping[str, Any],
+) -> None:
+  """Print offsets, per-extraction span/status/slice and the parse pair."""
+  label = config['ungrounded_label']
+  token_offset = record.in_data['token_offset']
+  char_offset = record.in_data['char_offset']
+  print(
+      f'offsets: token_offset={token_offset}  char_offset={char_offset}  '
+      f'({config["chunk_offset_caption"]})'
+  )
+  snaps = record.out_data['extractions']
+  for i, snap in enumerate(snaps, start=1):
+    span = (
+        label
+        if snap.char_interval is None
+        else _format_interval(snap.char_interval)
+    )
+    status = label if snap.alignment_status is None else snap.alignment_status
+    cut = _source_slice(record.in_data['source_text'], snap, char_offset, label)
+    print(
+        f'  [{i}] {_safe_text(snap.extraction_class)}: '
+        f'{_safe_text(snap.extraction_text)!r}  span={span}  status={status}'
+        f'  slice={cut}'
+    )
+  if parse_record is not None:
+    print_grounding_pair(parse_record.out_data['extractions'], snaps, label)
+
+
 def print_stage_records(
     records: Iterable[StageRecord], config: Mapping[str, Any]
 ) -> None:
@@ -436,11 +524,16 @@ def print_stage_records(
       print()
     printed_any = True
     print(f'[{label}] {function_name} — {path}')
-    for record in by_label[label]:
+    for i, record in enumerate(by_label[label]):
       _print_block('in', record.in_data)
       if label == 'parse' and not record.out_data['extractions']:
         print(_parse_callout(record.out_data['parse_error'], config))
       _print_block('out', record.out_data)
+      if label == 'align':
+        parses = by_label.get('parse', [])
+        _print_align_section(
+            record, parses[i] if i < len(parses) else None, config
+        )
 
 
 def _copy_attributes(

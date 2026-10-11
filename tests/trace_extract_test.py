@@ -600,6 +600,9 @@ class TraceExtractWrapperTest(parameterized.TestCase):
     document, _ = _run_offline_extract(self, canned)
     return document, self._print_records(self.sink)
 
+  def _span_lines(self, section):
+    return [l for l in section.splitlines() if "  span=" in l]
+
   def _align_record(self):
     return next(r for r in self.sink if r.label == "align")
 
@@ -670,13 +673,10 @@ class TraceExtractWrapperTest(parameterized.TestCase):
         f"offsets: token_offset=0  char_offset=0  ({caption})",
         section.splitlines(),
     )
-    headache = next(l for l in section.splitlines() if "'headache'" in l)
+    headache, elephant = self._span_lines(section)
     self.assertIn("[18, 26)", headache)
     self.assertIn("match_exact", headache)
     self.assertTrue(headache.endswith("slice='headache'"), headache)
-    elephant = next(
-        l for l in section.splitlines() if l.startswith("  [2] symptom")
-    )
     self.assertTrue(
         elephant.endswith(self.config["ungrounded_label"]), elephant
     )
@@ -706,7 +706,7 @@ class TraceExtractWrapperTest(parameterized.TestCase):
     shown = char or 0
     self.assertIn(f"token_offset={token}  char_offset={shown}", section)
     self.assertNotIn("char_offset=None", section)
-    line = next(l for l in section.splitlines() if "'headache'" in l)
+    line = self._span_lines(section)[0]
     self.assertIn(span, line)
     self.assertTrue(line.endswith("slice='headache'"), line)
 
