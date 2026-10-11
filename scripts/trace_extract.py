@@ -34,6 +34,7 @@ import pprint
 import sys
 import textwrap
 from typing import Any
+import urllib.error
 from urllib.parse import urlparse
 import urllib.request
 
@@ -43,6 +44,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 _CONFIG_PATH = _REPO_ROOT / 'config.yaml'
 _REDACTION_TOKEN = '<REDACTED>'
 _PROBES_ACTIVE = False
+_MAX_TAGS_BYTES = 1024 * 1024
 
 # (label, function_name, repo_relative_path)
 STAGE_CATALOG: list[tuple[str, str, str]] = [
@@ -821,21 +823,49 @@ class PreflightError(RuntimeError):
 def preflight_ollama(model_url: str, model_id: str, timeout: float) -> None:
   """Check that model_id is listed by GET {model_url}/api/tags.
 
-  :param model_url: Base URL of the Ollama server.
+  Accepts exactly model_id or model_id + ':latest'; no other tag matches.
+
+  :param model_url: Base URL of the Ollama server (http or https).
   :param model_id: Model name that must be listed.
   :param timeout: Seconds to wait for the response.
-  :raises PreflightError: If the model is not listed.
+  :raises PreflightError: If the URL is invalid, the host is not reachable,
+    the response is unusable or the model is not listed.
   """
+  parsed = urlparse(model_url)
+  if parsed.scheme not in ('http', 'https') or not parsed.netloc:
+    raise PreflightError(
+        f'model_url must be http(s)://host:port, got {model_url!r}'
+    )
+  host = _host_from_model_url(model_url)
   url = f'{model_url.rstrip("/")}/api/tags'
-  with urllib.request.urlopen(url, timeout=timeout) as response:
-    payload = json.loads(response.read())
-  names = {
-      value
-      for entry in payload['models']
-      for value in (entry.get('name'), entry.get('model'))
-  }
-  if model_id not in names:
-    raise PreflightError(f'model {model_id} is not available')
+  try:
+    with urllib.request.urlopen(url, timeout=timeout) as response:
+      body = response.read(_MAX_TAGS_BYTES)
+  except urllib.error.HTTPError as exc:
+    raise PreflightError(
+        f'Ollama at {host} returned HTTP {exc.code} for /api/tags'
+    ) from exc
+  except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+    reason = getattr(exc, 'reason', exc)
+    raise PreflightError(
+        f'Ollama is not reachable at {host} ({reason}). '
+        'Start it with: ollama serve'
+    ) from exc
+  try:
+    entries = json.loads(body)['models']
+    names = {
+        value
+        for entry in entries
+        for value in (entry.get('name'), entry.get('model'))
+    }
+  except (ValueError, KeyError, TypeError, AttributeError) as exc:
+    raise PreflightError(f'unexpected /api/tags response from {host}') from exc
+  if model_id not in names and f'{model_id}:latest' not in names:
+    available = ', '.join(sorted(n for n in names if n)) or 'none'
+    raise PreflightError(
+        f'model {model_id} is not available on {host} '
+        f'(available: {available}). Run: ollama pull {model_id}'
+    )
 
 
 def _extract_kwargs(config: Mapping[str, Any]) -> dict[str, Any]:
@@ -912,7 +942,11 @@ def main(argv: list[str] | None = None) -> int:
   args = parser.parse_args(argv)
   config = load_config(_CONFIG_PATH)
   if not args.catalog_only:
-    return run_live(config)
+    try:
+      return run_live(config)
+    except PreflightError as exc:
+      print(f'Error: {exc}', file=sys.stderr)
+      return 1
   print_call_header(config)
   print_stage_catalog()
   _self_check_probe_restore()
