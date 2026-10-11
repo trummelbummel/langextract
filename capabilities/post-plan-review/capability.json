@@ -1,0 +1,50 @@
+{
+  "id": "post-plan-review",
+  "role": "feature",
+  "version": "0.1.1",
+  "title": "Post-plan review gate",
+  "description": "After each executed plan/wave or gsd-quick task: run style-review, then dedup-review, commit their results, then pause for human commit review (approved or undo) before continuing.",
+  "tier": "full",
+  "requires": [],
+  "engines": {
+    "gsd": ">=1.14.0"
+  },
+  "runtimeCompat": {
+    "supported": ["*"],
+    "unsupported": []
+  },
+  "skills": ["post-plan-review"],
+  "agents": [],
+  "hooks": [],
+  "config": {
+    "workflow.post_plan_review": {
+      "type": "boolean",
+      "default": true,
+      "description": "After each executed wave/plan or quick task, run style-review → dedup-review → commit fixes → human commit review before continuing."
+    }
+  },
+  "steps": [
+    {
+      "point": "execute:wave:post",
+      "ref": {
+        "skill": "post-plan-review"
+      },
+      "produces": [],
+      "consumes": [],
+      "when": "workflow.post_plan_review",
+      "onError": "skip"
+    },
+    {
+      "point": "execute:post",
+      "ref": {
+        "skill": "post-plan-review"
+      },
+      "produces": [],
+      "consumes": [],
+      "when": "workflow.post_plan_review",
+      "onError": "skip"
+    }
+  ],
+  "contributions": [],
+  "gates": []
+}
