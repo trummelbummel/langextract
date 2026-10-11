@@ -22,6 +22,7 @@ import json
 import pathlib
 import socket
 import sys
+import tempfile
 import threading
 import time
 from unittest import mock
@@ -1177,7 +1178,10 @@ class TraceExtractPreflightTest(parameterized.TestCase):
         "model_url": self.stub.url,
         "preflight_timeout_s": 0.2,
     }
-    config_path = pathlib.Path(self.create_tempdir().full_path) / "config.yaml"
+    # TemporaryDirectory (not absl create_tempdir): make test runs under pytest,
+    # where --test_tmpdir is unset and create_tempdir raises UnparsedFlagAccessError.
+    tmp = self.enter_context(tempfile.TemporaryDirectory())
+    config_path = pathlib.Path(tmp) / "config.yaml"
     config_path.write_text(yaml.safe_dump(self.config), encoding="utf-8")
     self.enter_context(
         mock.patch.object(self.trace, "_CONFIG_PATH", config_path)
