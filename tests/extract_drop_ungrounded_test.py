@@ -17,7 +17,7 @@
 import logging
 from unittest import mock
 
-from absl.testing import absltest
+from absl.testing import parameterized
 
 import langextract as lx
 from langextract.core import data
@@ -54,7 +54,7 @@ def _all_grounded_document() -> data.AnnotatedDocument:
   )
 
 
-class ExtractDropUngroundedTest(absltest.TestCase):
+class ExtractDropUngroundedTest(parameterized.TestCase):
   """Acceptance tests for the drop_ungrounded flag."""
 
   def setUp(self):
@@ -72,6 +72,23 @@ class ExtractDropUngroundedTest(absltest.TestCase):
     ]
     self.description = "description"
 
+  def _setup_mocks(
+      self,
+      mock_create_model,
+      mock_annotator_cls,
+      *,
+      annotate_text=None,
+      annotate_documents=None,
+  ):
+    """Wire the patched create_model and Annotator for a single test."""
+    mock_create_model.return_value = mock.MagicMock(requires_fence_output=True)
+    mock_annotator = mock_annotator_cls.return_value
+    if annotate_text is not None:
+      mock_annotator.annotate_text.return_value = annotate_text
+    if annotate_documents is not None:
+      mock_annotator.annotate_documents.return_value = annotate_documents
+    return mock_annotator
+
   def _extract_text(self, *, drop_ungrounded: bool | None = None):
     kwargs = {
         "text_or_documents": "Romeo spoke",
@@ -86,61 +103,8 @@ class ExtractDropUngroundedTest(absltest.TestCase):
       kwargs["drop_ungrounded"] = drop_ungrounded
     return lx.extract(**kwargs)
 
-  @mock.patch("langextract.annotation.Annotator")
-  @mock.patch("langextract.extraction.factory.create_model")
-  def test_drop_ungrounded_true_keeps_grounded_only_on_string_path(
-      self, mock_create_model, mock_annotator_cls
-  ):
-    mock_create_model.return_value = mock.MagicMock(requires_fence_output=True)
-    mock_annotator_cls.return_value.annotate_text.return_value = (
-        _mixed_document()
-    )
-
-    result = self._extract_text(drop_ungrounded=True)
-
-    self.assertLen(result.extractions, 1)
-    self.assertEqual(result.extractions[0].extraction_text, "Romeo")
-    self.assertIsNotNone(result.extractions[0].char_interval)
-
-  @mock.patch("langextract.annotation.Annotator")
-  @mock.patch("langextract.extraction.factory.create_model")
-  def test_drop_ungrounded_false_keeps_both_on_string_path(
-      self, mock_create_model, mock_annotator_cls
-  ):
-    mock_create_model.return_value = mock.MagicMock(requires_fence_output=True)
-    mock_annotator_cls.return_value.annotate_text.return_value = (
-        _mixed_document()
-    )
-
-    result = self._extract_text(drop_ungrounded=False)
-
-    self.assertLen(result.extractions, 2)
-
-  @mock.patch("langextract.annotation.Annotator")
-  @mock.patch("langextract.extraction.factory.create_model")
-  def test_drop_ungrounded_default_keeps_both_on_string_path(
-      self, mock_create_model, mock_annotator_cls
-  ):
-    mock_create_model.return_value = mock.MagicMock(requires_fence_output=True)
-    mock_annotator_cls.return_value.annotate_text.return_value = (
-        _mixed_document()
-    )
-
-    result = self._extract_text()
-
-    self.assertLen(result.extractions, 2)
-
-  @mock.patch("langextract.annotation.Annotator")
-  @mock.patch("langextract.extraction.factory.create_model")
-  def test_drop_ungrounded_true_filters_documents_path(
-      self, mock_create_model, mock_annotator_cls
-  ):
-    mock_create_model.return_value = mock.MagicMock(requires_fence_output=True)
-    mock_annotator_cls.return_value.annotate_documents.return_value = iter(
-        [_mixed_document()]
-    )
-
-    result = lx.extract(
+  def _extract_documents(self, *, drop_ungrounded: bool):
+    return lx.extract(
         text_or_documents=[data.Document(text="Romeo spoke", document_id="d1")],
         prompt_description=self.description,
         examples=self.examples,
@@ -148,8 +112,64 @@ class ExtractDropUngroundedTest(absltest.TestCase):
         api_key="test-key",
         use_schema_constraints=False,
         show_progress=False,
-        drop_ungrounded=True,
+        drop_ungrounded=drop_ungrounded,
     )
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name="true_keeps_grounded_only",
+          drop_ungrounded=True,
+          expected_count=1,
+          expected_text="Romeo",
+      ),
+      dict(
+          testcase_name="false_keeps_both",
+          drop_ungrounded=False,
+          expected_count=2,
+          expected_text=None,
+      ),
+      dict(
+          testcase_name="default_keeps_both",
+          drop_ungrounded=None,
+          expected_count=2,
+          expected_text=None,
+      ),
+  )
+  @mock.patch("langextract.annotation.Annotator")
+  @mock.patch("langextract.extraction.factory.create_model")
+  def test_drop_ungrounded_on_string_path(
+      self,
+      mock_create_model,
+      mock_annotator_cls,
+      drop_ungrounded,
+      expected_count,
+      expected_text,
+  ):
+    self._setup_mocks(
+        mock_create_model,
+        mock_annotator_cls,
+        annotate_text=_mixed_document(),
+    )
+
+    result = self._extract_text(drop_ungrounded=drop_ungrounded)
+
+    self.assertLen(result.extractions, expected_count)
+    if expected_text is not None:
+      self.assertEqual(result.extractions[0].extraction_text, expected_text)
+      self.assertIsNotNone(result.extractions[0].char_interval)
+
+  @mock.patch("langextract.annotation.Annotator")
+  @mock.patch("langextract.extraction.factory.create_model")
+  def test_drop_ungrounded_true_filters_documents_path(
+      self, mock_create_model, mock_annotator_cls
+  ):
+    self._setup_mocks(
+        mock_create_model,
+        mock_annotator_cls,
+        annotate_documents=iter([_mixed_document()]),
+    )
+
+    result = self._extract_documents(drop_ungrounded=True)
 
     self.assertLen(result, 1)
     self.assertLen(result[0].extractions, 1)
@@ -160,9 +180,10 @@ class ExtractDropUngroundedTest(absltest.TestCase):
   def test_drop_ungrounded_true_logs_removed_count(
       self, mock_create_model, mock_annotator_cls
   ):
-    mock_create_model.return_value = mock.MagicMock(requires_fence_output=True)
-    mock_annotator_cls.return_value.annotate_text.return_value = (
-        _mixed_document()
+    self._setup_mocks(
+        mock_create_model,
+        mock_annotator_cls,
+        annotate_text=_mixed_document(),
     )
 
     with self.assertLogs(level="INFO") as logs:
@@ -176,9 +197,10 @@ class ExtractDropUngroundedTest(absltest.TestCase):
   def test_drop_ungrounded_true_no_log_when_nothing_removed(
       self, mock_create_model, mock_annotator_cls
   ):
-    mock_create_model.return_value = mock.MagicMock(requires_fence_output=True)
-    mock_annotator_cls.return_value.annotate_text.return_value = (
-        _all_grounded_document()
+    self._setup_mocks(
+        mock_create_model,
+        mock_annotator_cls,
+        annotate_text=_all_grounded_document(),
     )
 
     with self.assertLogs(level="INFO") as logs:
