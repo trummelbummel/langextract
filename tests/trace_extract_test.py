@@ -444,6 +444,49 @@ class TraceExtractWrapperTest(absltest.TestCase):
     self.assertLess(chunk_at, prompt_at)
     self.assertLess(prompt_at, model_at)
 
+  def test_parse_wrapper_records_raw_text_flags_and_ungrounded_snapshots(self):
+    document, _ = self._run_traced_extract(["model", "parse"])
+
+    by_label = {r.label: r for r in self.sink}
+    parse = by_label["parse"]
+    self.assertEqual(
+        parse.in_data["raw_model_text"],
+        by_label["model"].out_data["raw_model_text"],
+    )
+    self.assertEqual(parse.in_data["raw_model_text"], _CANNED)
+    self.assertEqual(
+        parse.in_data["flags"],
+        {
+            "format_type": "json",
+            "use_fences": False,
+            "strict_fences": False,
+            "use_wrapper": True,
+            "wrapper_key": "extractions",
+        },
+    )
+    self.assertIs(parse.in_data["suppress_parse_errors"], True)
+    snapshots = parse.out_data["extractions"]
+    self.assertLen(snapshots, 2)
+    for snap in snapshots:
+      self.assertIsInstance(snap, self.trace.ExtractionSnapshot)
+      self.assertIsNone(snap.char_interval)
+      self.assertIsNone(snap.alignment_status)
+    self.assertLen(document.extractions, 2)
+    self.assertIsNotNone(document.extractions[0].char_interval)
+
+  def test_print_stage_records_prints_parse_flags_and_snapshots(self):
+    self._run_traced_extract(["model", "parse"])
+
+    printed = self._print_records(self.sink)
+
+    self.assertIn("[parse] Resolver.resolve — langextract/resolver.py", printed)
+    parse_part = printed[printed.index("[parse]") :]
+    self.assertIn(_CANNED, parse_part)
+    self.assertIn("flags:", parse_part)
+    self.assertIn("use_fences': False", parse_part)
+    self.assertIn("wrapper_key': 'extractions'", parse_part)
+    self.assertIn("extractions:", parse_part)
+
 
 if __name__ == "__main__":
   absltest.main()
