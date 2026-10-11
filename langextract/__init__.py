@@ -34,6 +34,7 @@ __all__ = [
     # Submodules exposed lazily on attribute access for ergonomics:
     "annotation",
     "data",
+    "evaluation",
     "providers",
     "schema",
     "inference",
@@ -68,6 +69,7 @@ _LAZY_MODULES = {
     "data_lib": "langextract.data_lib",
     "debug_utils": "langextract.core.debug_utils",
     "exceptions": "langextract.exceptions",
+    "evaluation": "langextract.evaluation",
     "factory": "langextract.factory",
     "inference": "langextract.inference",
     "io": "langextract.io",
