@@ -2,19 +2,19 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 milestone_name: MVP
-current_phase: 05
-current_phase_name: Live extract & Ollama preflight
+current_phase: 07
+current_phase_name: gold-set-evaluation-metrics
 current_plan: 1
 status: executing
 stopped_at: Completed 261011-p2z-PLAN.md
-last_updated: "2026-10-11T16:08:26.734Z"
+last_updated: "2026-10-11T18:00:03.580Z"
 last_activity: 2026-10-11
 last_activity_desc: Phase 05 execution started
-state_head: d84f4594e053844c0d1fd65d7ed19b8b4cb07668
+state_head: 95d47c4e5eaccbdd3c459fc3c1c9f4b04b59d31c
 progress:
-  total_phases: 6
+  total_phases: 7
   completed_phases: 4
-  total_plans: 11
+  total_plans: 16
   completed_plans: 11
 ---
 
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-10-11)
 
 ## Current Position
 
-Phase: 05 (Live extract & Ollama preflight) — EXECUTING
+Phase: 07 (gold-set-evaluation-metrics) — READY TO EXECUTE
 Current Plan: 1
-Total Plans in Phase: 2
-Status: Executing Phase 05
+Total Plans in Phase: 5
+Status: Ready to execute
 Last activity: 2026-10-11 - Completed quick task 261011-p2z: drop_ungrounded opt-in on lx.extract()
 
 Progress: [███████░░░] 67%
@@ -113,6 +113,10 @@ Recent decisions affecting current work:
 - [Phase 05]: 05-02: One-chunk pre-check uses document_path text vs config max_char_buffer; buffer raised to 40000 for example_document.md
 - [Phase 05]: Chunk printout uses ##########/*******/%%%%%% titles; document_id only under percent marker
 - [Quick 261011-p2z]: Keyword-only drop_ungrounded=False; _drop_ungrounded filters both extract return paths; INFO when removals > 0
+
+### Roadmap Evolution
+
+- Phase 7 added: Gold-set evaluation metrics (`evaluate(predicted, gold)` — IoU + greedy 1:1 + P/R/F1; modular `langextract/evaluation/` package)
 
 ### Pending Todos
 
