@@ -1067,6 +1067,15 @@ class _StubOllama(http.server.ThreadingHTTPServer):
     return f"http://127.0.0.1:{self.server_address[1]}"
 
 
+def _start_stub(test: absltest.TestCase) -> _StubOllama:
+  """Start a stub Ollama server and register shutdown on the test."""
+  stub = _StubOllama()
+  threading.Thread(target=stub.serve_forever, daemon=True).start()
+  test.addCleanup(stub.server_close)
+  test.addCleanup(stub.shutdown)
+  return stub
+
+
 class _StubHandler(http.server.BaseHTTPRequestHandler):
 
   def log_message(self, *args) -> None:
@@ -1178,10 +1187,7 @@ class TraceExtractLiveTest(absltest.TestCase):
         encoding="utf-8",
     )
     self.config = {**self.config, "document_path": str(doc)}
-    self.stub = _StubOllama()
-    threading.Thread(target=self.stub.serve_forever, daemon=True).start()
-    self.addCleanup(self.stub.server_close)
-    self.addCleanup(self.stub.shutdown)
+    self.stub = _start_stub(self)
 
   def test_run_live_walks_one_extract_against_stub(self):
     config = {**self.config, "model_url": self.stub.url}
@@ -1248,10 +1254,7 @@ class TraceExtractPreflightTest(parameterized.TestCase):
   def setUp(self):
     super().setUp()
     self.trace = _load_script_module()
-    self.stub = _StubOllama()
-    threading.Thread(target=self.stub.serve_forever, daemon=True).start()
-    self.addCleanup(self.stub.server_close)
-    self.addCleanup(self.stub.shutdown)
+    self.stub = _start_stub(self)
     # TemporaryDirectory (not absl create_tempdir): make test runs under pytest,
     # where --test_tmpdir is unset and create_tempdir raises UnparsedFlagAccessError.
     tmp = pathlib.Path(self.enter_context(tempfile.TemporaryDirectory()))
@@ -1371,10 +1374,7 @@ class TraceExtractGuardTest(absltest.TestCase):
         "Patient reports a headache since Monday and takes ibuprofen.",
         encoding="utf-8",
     )
-    self.stub = _StubOllama()
-    threading.Thread(target=self.stub.serve_forever, daemon=True).start()
-    self.addCleanup(self.stub.server_close)
-    self.addCleanup(self.stub.shutdown)
+    self.stub = _start_stub(self)
     self.config = {
         **self.base,
         "document_path": str(self.doc),
