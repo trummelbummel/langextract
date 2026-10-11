@@ -19,6 +19,7 @@ import http.server
 import importlib.util
 import io
 import json
+import os
 import pathlib
 import socket
 import sys
@@ -1094,6 +1095,58 @@ class _StubHandler(http.server.BaseHTTPRequestHandler):
     self._reply(_STUB_GENERATE_BODY)
 
 
+class TraceExtractDocumentTest(absltest.TestCase):
+  """Config document_path → text_or_documents (quick 261011-cst)."""
+
+  def setUp(self):
+    super().setUp()
+    self.trace = _load_script_module()
+    self.base = self.trace.load_config(self.trace._CONFIG_PATH)
+    self.tmp = pathlib.Path(self.enter_context(tempfile.TemporaryDirectory()))
+
+  def _config_with_doc(self, text: str, rel_name: str = "doc.txt") -> dict:
+    path = self.tmp / rel_name
+    path.write_text(text, encoding="utf-8")
+    return {**self.base, "document_path": str(path)}
+
+  def test_extract_kwargs_text_from_document_path_not_sample_text(self):
+    body = "Unique document body for kwargs mapping."
+    config = self._config_with_doc(body)
+    config["sample_text"] = "MUST NOT BE USED"
+    kwargs = self.trace._extract_kwargs(config)
+    self.assertEqual(kwargs["text_or_documents"], body)
+    self.assertNotEqual(kwargs["text_or_documents"], config["sample_text"])
+
+  def test_document_path_resolves_relative_to_repo_root_not_cwd(self):
+    body = "repo-relative document contents"
+    rel = "data/_trace_doc_test.txt"
+    abs_path = self.trace._REPO_ROOT / rel
+    abs_path.parent.mkdir(parents=True, exist_ok=True)
+    abs_path.write_text(body, encoding="utf-8")
+    self.addCleanup(abs_path.unlink)
+    config = {**self.base, "document_path": rel}
+    cwd = self.tmp / "elsewhere"
+    cwd.mkdir()
+    prior = pathlib.Path.cwd()
+    try:
+      os.chdir(cwd)
+      kwargs = self.trace._extract_kwargs(config)
+    finally:
+      os.chdir(prior)
+    self.assertEqual(kwargs["text_or_documents"], body)
+
+  def test_missing_document_exits_with_error_and_resolved_path(self):
+    missing = self.tmp / "no-such-document.txt"
+    config = {**self.base, "document_path": str(missing)}
+    err = io.StringIO()
+    with contextlib.redirect_stderr(err):
+      with self.assertRaises(SystemExit) as cm:
+        self.trace._extract_kwargs(config)
+    self.assertEqual(cm.exception.code, 1)
+    self.assertStartsWith(err.getvalue(), "Error:")
+    self.assertIn(str(missing.resolve()), err.getvalue())
+
+
 class TraceExtractLiveTest(absltest.TestCase):
   """Live path against a local stub Ollama server (Phase 5)."""
 
@@ -1101,6 +1154,14 @@ class TraceExtractLiveTest(absltest.TestCase):
     super().setUp()
     self.trace = _load_script_module()
     self.config = self.trace.load_config(self.trace._CONFIG_PATH)
+    # Short temp document so the stub still sees exactly one /api/generate.
+    tmp = pathlib.Path(self.enter_context(tempfile.TemporaryDirectory()))
+    doc = tmp / "short.txt"
+    doc.write_text(
+        "Patient reports a headache since Monday and takes ibuprofen.",
+        encoding="utf-8",
+    )
+    self.config = {**self.config, "document_path": str(doc)}
     self.stub = _StubOllama()
     threading.Thread(target=self.stub.serve_forever, daemon=True).start()
     self.addCleanup(self.stub.server_close)

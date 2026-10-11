@@ -17,8 +17,8 @@ ungrounded_label: ungrounded
 # Printed beside the token/char offsets under [align]
 chunk_offset_caption: chunk start in the document
 
-# Document sent to the one live lx.extract call (short: one chunk)
-sample_text: Patient reports a headache since Monday and takes ibuprofen.
+# Document file for the one live lx.extract call (repo-relative path)
+document_path: data/example_document.md
 
 # Prompt description for the live call
 prompt_description: >

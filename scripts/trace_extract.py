@@ -888,6 +888,23 @@ def preflight_ollama(model_url: str, model_id: str, timeout: float) -> None:
     )
 
 
+def _load_document_text(document_path: str | Path) -> str:
+  """Read UTF-8 document text; resolve relative paths against the repo root.
+
+  :param document_path: Absolute or repo-relative path from config.
+  :return: File contents.
+  :raises SystemExit: With code 1 when the file is missing.
+  """
+  path = Path(document_path)
+  if not path.is_absolute():
+    path = _REPO_ROOT / path
+  path = path.resolve()
+  if not path.is_file():
+    print(f'Error: document not found: {path}', file=sys.stderr)
+    raise SystemExit(1)
+  return path.read_text(encoding='utf-8')
+
+
 def _extract_kwargs(config: Mapping[str, Any]) -> dict[str, Any]:
   """Build the pinned lx.extract keyword arguments from config.
 
@@ -912,7 +929,7 @@ def _extract_kwargs(config: Mapping[str, Any]) -> dict[str, Any]:
       for example in config['examples']
   ]
   return {
-      'text_or_documents': config['sample_text'],
+      'text_or_documents': _load_document_text(config['document_path']),
       'prompt_description': config['prompt_description'],
       'examples': examples,
       'model_id': config['model_id'],
