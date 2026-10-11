@@ -1,0 +1,9 @@
+{
+  "command": ".venv/bin/python tests/trace_extract_test.py TraceExtractProbeTest",
+  "exitCode": 1,
+  "output": "TAP version 13\nnot ok 1 - test_probe_targets_exposes_five_stage_labels\nok 2 - test_mid_install_failure_restores_partial_wraps\nok 3 - test_nested_trace_probes_rejected_with_already_active\nok 4 - test_probes_active_false_after_exception_exit\nok 5 - test_trace_probes_identity_passthrough_no_side_effects\nok 6 - test_trace_probes_installs_five_and_restores_on_exception\nok 7 - test_trace_probes_normal_exit_restores_and_clears_flag\n# tests 7\n# pass 6\n# fail 1\n",
+  "targetTest": "test_probe_targets_exposes_five_stage_labels",
+  "targetFile": "tests/trace_extract_test.py",
+  "expected": "_PROBE_TARGETS maps five catalog labels; re-entry/mid-install/normal-exit covered",
+  "actual": "AttributeError: module 'trace_extract' has no attribute '_PROBE_TARGETS'"
+}

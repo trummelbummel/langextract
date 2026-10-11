@@ -826,6 +826,49 @@ class TraceExtractProbeTest(absltest.TestCase):
         raise RuntimeError("boom")
     self.assertFalse(self.trace._PROBES_ACTIVE)
 
+  def test_nested_trace_probes_rejected_with_already_active(self):
+    with self.trace.trace_probes():
+      with self.assertRaisesRegex(RuntimeError, r"already active"):
+        with self.trace.trace_probes():
+          pass
+    with self.trace.trace_probes():
+      self.assertTrue(self.trace._PROBES_ACTIVE)
+    self.assertFalse(self.trace._PROBES_ACTIVE)
+
+  def test_trace_probes_normal_exit_restores_and_clears_flag(self):
+    originals = self._originals()
+    with self.trace.trace_probes():
+      for label, (cls, attr) in _STAGE_TARGETS.items():
+        self.assertIsNot(getattr(cls, attr), originals[label])
+      self.assertTrue(self.trace._PROBES_ACTIVE)
+    for label, (cls, attr) in _STAGE_TARGETS.items():
+      self.assertIs(getattr(cls, attr), originals[label])
+    self.assertFalse(self.trace._PROBES_ACTIVE)
+
+  def test_mid_install_failure_restores_partial_wraps(self):
+    originals = self._originals()
+    second = list(_STAGE_TARGETS)[1]
+
+    def boom(original):
+      raise RuntimeError("inject install failure")
+
+    with self.assertRaisesRegex(RuntimeError, r"inject install failure"):
+      with self.trace.trace_probes(wrappers={second: boom}):
+        pass
+    for label, (cls, attr) in _STAGE_TARGETS.items():
+      self.assertIs(
+          getattr(cls, attr),
+          originals[label],
+          msg=f"{label} should be restored after mid-install failure",
+      )
+    self.assertFalse(self.trace._PROBES_ACTIVE)
+
+  def test_probe_targets_exposes_five_stage_labels(self):
+    self.assertCountEqual(
+        self.trace._PROBE_TARGETS.keys(),
+        list(_STAGE_TARGETS),
+    )
+
 
 if __name__ == "__main__":
   absltest.main()
