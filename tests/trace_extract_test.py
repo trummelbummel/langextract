@@ -20,12 +20,15 @@ import importlib.util
 import io
 import json
 import pathlib
+import socket
 import sys
 import threading
+import time
 from unittest import mock
 
 from absl.testing import absltest
 from absl.testing import parameterized
+import yaml
 
 from langextract import chunking
 from langextract import data
@@ -1053,6 +1056,9 @@ class _StubOllama(http.server.ThreadingHTTPServer):
     super().__init__(("127.0.0.1", 0), _StubHandler)
     self.hits = {"/api/tags": 0, "/api/generate": 0}
     self.tags_body = _STUB_TAGS_BODY
+    self.tags_status = 200
+    self.tags_raw = None
+    self.tags_delay = 0.0
 
   @property
   def url(self):
@@ -1064,9 +1070,9 @@ class _StubHandler(http.server.BaseHTTPRequestHandler):
   def log_message(self, *args):
     pass
 
-  def _reply(self, body):
-    payload = json.dumps(body).encode("utf-8")
-    self.send_response(200)
+  def _reply(self, body, status=200, raw=None):
+    payload = raw if raw is not None else json.dumps(body).encode("utf-8")
+    self.send_response(status)
     self.send_header("Content-Type", "application/json")
     self.send_header("Content-Length", str(len(payload)))
     self.end_headers()
@@ -1074,7 +1080,10 @@ class _StubHandler(http.server.BaseHTTPRequestHandler):
 
   def do_GET(self):  # pylint: disable=invalid-name
     self.server.hits[self.path] = self.server.hits.get(self.path, 0) + 1
-    self._reply(self.server.tags_body)
+    time.sleep(self.server.tags_delay)
+    self._reply(
+        self.server.tags_body, self.server.tags_status, self.server.tags_raw
+    )
 
   def do_POST(self):  # pylint: disable=invalid-name
     self.rfile.read(int(self.headers.get("Content-Length", 0)))
@@ -1144,6 +1153,100 @@ class TraceExtractLiveTest(absltest.TestCase):
         code = self.trace.main(["--catalog-only"])
     self.assertEqual(code, 0)
     self.assertEqual(out.getvalue(), expected.getvalue())
+
+
+def _closed_port_url():
+  with socket.socket() as sock:
+    sock.bind(("127.0.0.1", 0))
+    port = sock.getsockname()[1]
+  return f"http://127.0.0.1:{port}"
+
+
+class TraceExtractPreflightTest(parameterized.TestCase):
+  """Fail-closed preflight through main() (Phase 5, RUN-02)."""
+
+  def setUp(self):
+    super().setUp()
+    self.trace = _load_script_module()
+    self.stub = _StubOllama()
+    threading.Thread(target=self.stub.serve_forever, daemon=True).start()
+    self.addCleanup(self.stub.server_close)
+    self.addCleanup(self.stub.shutdown)
+    self.config = {
+        **self.trace.load_config(self.trace._CONFIG_PATH),
+        "model_url": self.stub.url,
+        "preflight_timeout_s": 0.2,
+    }
+    config_path = pathlib.Path(self.create_tempdir().full_path) / "config.yaml"
+    config_path.write_text(yaml.safe_dump(self.config), encoding="utf-8")
+    self.enter_context(
+        mock.patch.object(self.trace, "_CONFIG_PATH", config_path)
+    )
+
+  def _run_main(self):
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+      code = self.trace.main([])
+    return code, out.getvalue(), err.getvalue()
+
+  def _assert_fail_closed(self, expected):
+    code, out, err = self._run_main()
+    self.assertEqual(code, 1)
+    self.assertEqual(out, "")
+    self.assertLen(err.splitlines(), 1)
+    self.assertStartsWith(err, "Error:")
+    for fragment in expected:
+      self.assertIn(fragment, err)
+    self.assertEqual(self.stub.hits["/api/generate"], 0)
+
+  def test_preflight_fails_closed_when_host_unreachable(self):
+    url = _closed_port_url()
+    self.config["model_url"] = url
+    pathlib.Path(self.trace._CONFIG_PATH).write_text(
+        yaml.safe_dump(self.config), encoding="utf-8"
+    )
+    self._assert_fail_closed([url.removeprefix("http://"), "ollama serve"])
+
+  def test_preflight_fails_closed_when_model_missing(self):
+    self.stub.tags_body = {
+        "models": [{"name": "gemma3:4b-it-qat"}, {"name": "qwen2.5:7b"}]
+    }
+    self._assert_fail_closed(["gemma3:4b", "ollama pull gemma3:4b"])
+
+  def test_preflight_fails_closed_on_http_500(self):
+    self.stub.tags_status = 500
+    self._assert_fail_closed(["HTTP 500"])
+
+  @parameterized.named_parameters(
+      dict(testcase_name="not_json", raw=b"not json"),
+      dict(testcase_name="no_models_list", raw=b'{"models": "none"}'),
+  )
+  def test_preflight_fails_closed_on_malformed_tags(self, raw):
+    self.stub.tags_raw = raw
+    self._assert_fail_closed(["unexpected /api/tags response"])
+
+  def test_preflight_fails_closed_on_timeout(self):
+    self.stub.tags_delay = 1.0
+    started = time.monotonic()
+    self._assert_fail_closed(["not reachable"])
+    self.assertLess(time.monotonic() - started, 3.0)
+
+  def test_preflight_accepts_latest_tag(self):
+    self.stub.tags_body = {"models": [{"name": "gemma3:4b:latest"}]}
+    self.assertIsNone(
+        self.trace.preflight_ollama(self.stub.url, "gemma3:4b", 1.0)
+    )
+
+  @parameterized.named_parameters(
+      dict(testcase_name="file_scheme", url="file:///etc/passwd"),
+      dict(testcase_name="no_scheme", url="localhost:11434"),
+  )
+  def test_preflight_rejects_non_http_url_without_request(self, url):
+    with mock.patch(
+        "urllib.request.urlopen", side_effect=AssertionError("request sent")
+    ):
+      with self.assertRaisesRegex(self.trace.PreflightError, "http"):
+        self.trace.preflight_ollama(url, "gemma3:4b", 1.0)
 
 
 if __name__ == "__main__":
