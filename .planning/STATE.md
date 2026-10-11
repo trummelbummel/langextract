@@ -4,17 +4,17 @@ milestone: v1.0
 milestone_name: MVP
 current_phase: 05
 current_phase_name: Live extract & Ollama preflight
-current_plan: 1
+current_plan: 2
 status: executing
-stopped_at: Phase 4 complete; Phase 05 execution in progress (plans 05-01/05-02 present)
-last_updated: "2026-10-11T07:04:19.239Z"
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-10-11T07:07:16.662Z"
 last_activity: 2026-10-11
-state_head: 7ccfea4bcd21391a31421f1979891b2bb4f0e08a
+state_head: 90885ee61f2ba2d3c10e9a3fa9253fa5909e7277
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 11
-  completed_plans: 9
+  completed_plans: 10
 last_activity_desc: Phase 4 complete; resumed Phase 05 execution position
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-11)
 ## Current Position
 
 Phase: 05 (Live extract & Ollama preflight) — EXECUTING
-Current Plan: 1
+Current Plan: 2
 Total Plans in Phase: 2
-Status: Executing Phase 05
+Status: Ready to execute
 Last activity: 2026-10-11
 
 Progress: [███████░░░] 67%
@@ -74,6 +74,7 @@ Progress: [███████░░░] 67%
 | Phase 04 P03 | 10 min | 1 tasks | 3 files |
 | Phase 03 P01 | 4min | 2 tasks | 2 files |
 | Phase 03 P02 | 3min | 2 tasks | 2 files |
+| Phase 05 P01 | 25 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,8 @@ Recent decisions affecting current work:
 - [Phase 03]: _PROBE_TARGETS populated lazily so catalog import stays light
 - [Phase 03]: Unknown wrappers= keys raise ValueError with sorted labels
 - [Phase 03]: Self-check stderr 'Error: probe self-check failed' + SystemExit(1); expected RuntimeError swallowed
+- [Phase 05]: 05-01: preflight matches exact model id or :latest only; non-http(s) model_url rejected before any request
+- [Phase 05]: 05-01: --catalog-only keeps Phase 3 D-09 self-check (not langextract-free); system python lacks yaml so verify with .venv
 
 ### Pending Todos
 
@@ -122,6 +125,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-11
-Stopped at: Phase 4 complete; Phase 05 execution in progress (plans 05-01/05-02 present)
+Last session: 2026-10-11T07:07:16.645Z
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None

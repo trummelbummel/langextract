@@ -9,8 +9,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Run
 
-- [ ] **RUN-01**: Developer can run `python scripts/trace_extract.py` against local Ollama `gemma3:4b` for one short document
-- [ ] **RUN-02**: Script fails clearly if Ollama is down or `gemma3:4b` is missing, before printing a fake empty walkthrough
+- [x] **RUN-01**: Developer can run `python scripts/trace_extract.py` against local Ollama `gemma3:4b` for one short document
+- [x] **RUN-02**: Script fails clearly if Ollama is down or `gemma3:4b` is missing, before printing a fake empty walkthrough
 - [ ] **RUN-03**: Script uses one `lx.extract()` call and one model `infer` (no second inference, no cloud providers)
 
 ### Stages
@@ -63,8 +63,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RUN-01 | Phase 5 | Pending |
-| RUN-02 | Phase 5 | Pending |
+| RUN-01 | Phase 5 | Complete |
+| RUN-02 | Phase 5 | Complete |
 | RUN-03 | Phase 5 | Pending |
 | STG-01 | Phase 1 | Complete |
 | STG-02 | Phase 1 | Complete |
