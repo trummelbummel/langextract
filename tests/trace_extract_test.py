@@ -1341,6 +1341,26 @@ class TraceExtractPreflightTest(parameterized.TestCase):
 _SINGLE_CALL_LINE = "run: 1 lx.extract, 1 OllamaLanguageModel.infer (1 prompt)"
 
 
+@absltest.skipUnless(
+    os.environ.get("TRACE_LIVE_OLLAMA") == "1",
+    "set TRACE_LIVE_OLLAMA=1 to hit local Ollama",
+)
+class TraceExtractRealOllamaTest(absltest.TestCase):
+  """End-to-end run against local gemma3:4b (Phase 5, RUN-01 SC1)."""
+
+  def test_run_live_completes_against_local_gemma3(self):
+    trace = _load_script_module()
+    config = trace.load_config(trace._CONFIG_PATH)
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+      code = trace.run_live(config)
+    text = out.getvalue()
+    lines = text.splitlines()
+    self.assertEqual(code, 0)
+    self.assertEqual(lines[-1], _SINGLE_CALL_LINE)
+    self.assertIn("[model] OllamaLanguageModel.infer", text)
+
+
 class TraceExtractGuardTest(absltest.TestCase):
   """Single-inference contract (Phase 5, RUN-03)."""
 

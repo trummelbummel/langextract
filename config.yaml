@@ -20,15 +20,14 @@ chunk_offset_caption: chunk start in the document
 # Document file for the one live lx.extract call (repo-relative path)
 document_path: data/example_document.md
 
-# Chunking for lx.extract (library defaults). example_document.md is multi-chunk
-# at 1000; raise max_char_buffer to force a single chunk if desired.
-max_char_buffer: 1000
-context_window_chars: null
+# Chunking for lx.extract. Raised above example_document.md (~33k chars) so the
+# live run stays one chunk / one Ollama infer (RUN-03).
+max_char_buffer: 40000
+context_window_chars: 200
 
 # Prompt description for the live call
 prompt_description: >
-  Extract symptoms and medications in order of appearance, using the exact
-  text from the source.
+  Extract rules as single sentences for code style or deduplication reviews.
 
 # One few-shot example for the live call; texts appear verbatim in its text
 examples:
