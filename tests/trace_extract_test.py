@@ -1338,9 +1338,6 @@ class TraceExtractPreflightTest(parameterized.TestCase):
         self.trace.preflight_ollama(url, "gemma3:4b", 1.0)
 
 
-_SINGLE_CALL_LINE = "run: 1 lx.extract, 1 OllamaLanguageModel.infer (1 prompt)"
-
-
 @absltest.skipUnless(
     os.environ.get("TRACE_LIVE_OLLAMA") == "1",
     "set TRACE_LIVE_OLLAMA=1 to hit local Ollama",
@@ -1357,7 +1354,7 @@ class TraceExtractRealOllamaTest(absltest.TestCase):
     text = out.getvalue()
     lines = text.splitlines()
     self.assertEqual(code, 0)
-    self.assertEqual(lines[-1], _SINGLE_CALL_LINE)
+    self.assertEqual(lines[-1], trace._SINGLE_CALL_LINE)
     self.assertIn("[model] OllamaLanguageModel.infer", text)
 
 
@@ -1385,7 +1382,12 @@ class TraceExtractGuardTest(absltest.TestCase):
         "max_char_buffer": 1000,
     }
 
-  def _model_record(self, prompts, prompt_index=0, in_data=None):
+  def _model_record(
+      self,
+      prompts: list[str] | tuple[str, ...],
+      prompt_index: int = 0,
+      in_data: dict | None = None,
+  ) -> object:
     shared = in_data or {
         "batch_prompts": tuple(prompts),
         "batch_size": len(prompts),
@@ -1407,7 +1409,7 @@ class TraceExtractGuardTest(absltest.TestCase):
       code = self.trace.run_live(self.config)
     lines = out.getvalue().splitlines()
     self.assertEqual(code, 0)
-    self.assertEqual(lines[-1], _SINGLE_CALL_LINE)
+    self.assertEqual(lines[-1], self.trace._SINGLE_CALL_LINE)
     self.assertEqual(self.stub.hits, {"/api/tags": 1, "/api/generate": 1})
 
   def test_check_single_inference_rejects_zero_calls(self):

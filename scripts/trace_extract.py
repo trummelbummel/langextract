@@ -972,6 +972,24 @@ def check_single_inference(
   )
 
 
+def _refuse_oversized_document(document: str, limit: int) -> int | None:
+  """Return exit code 1 when document exceeds the one-chunk ceiling.
+
+  :param document: Loaded document text.
+  :param limit: Max chars allowed (typically max_char_buffer).
+  :return: 1 if too large, else None.
+  """
+  if len(document) <= limit:
+    return None
+  print(
+      f'Error: document is {len(document)} chars; keep it ≤ {limit} '
+      f'(max_char_buffer, default {_MAX_CHAR_BUFFER}) so the run is one '
+      'chunk and one inference',
+      file=sys.stderr,
+  )
+  return 1
+
+
 def run_live(config: Mapping[str, Any]) -> int:
   """Preflight Ollama, run one traced lx.extract and print the walkthrough.
 
@@ -981,14 +999,9 @@ def run_live(config: Mapping[str, Any]) -> int:
   """
   document = _load_document_text(config['document_path'])
   limit = config.get('max_char_buffer', _MAX_CHAR_BUFFER)
-  if len(document) > limit:
-    print(
-        f'Error: document is {len(document)} chars; keep it ≤ {limit} '
-        f'(max_char_buffer, default {_MAX_CHAR_BUFFER}) so the run is one '
-        'chunk and one inference',
-        file=sys.stderr,
-    )
-    return 1
+  refused = _refuse_oversized_document(document, limit)
+  if refused is not None:
+    return refused
   preflight_ollama(
       config['model_url'], config['model_id'], config['preflight_timeout_s']
   )
