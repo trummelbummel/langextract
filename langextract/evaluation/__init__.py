@@ -27,7 +27,6 @@ from langextract.evaluation.criteria import SameClass
 from langextract.evaluation.criteria import span_iou
 from langextract.evaluation.criteria import SpanIoU
 from langextract.evaluation.criteria import TextMatch
-from langextract.evaluation.matching import greedy_match
 
 __all__ = [
     "AttributesEqual",
@@ -104,11 +103,57 @@ class Evaluator:
         micro=Evaluator.prf_from_counts(*micro),
     )
 
+  @staticmethod
+  def greedy_match(
+      predicted: Sequence[data.Extraction],
+      gold: Sequence[data.Extraction],
+      criteria: Sequence[MatchCriterion],
+      score_fn: (
+          Callable[[data.Extraction, data.Extraction], float] | None
+      ) = None,
+  ) -> list[tuple[int, int]]:
+    """Assign predicted extractions to gold with greedy 1:1 matching.
+
+    Candidates are pairs that pass every MatchCriterion. Ranking uses
+    ``score_fn`` (default ``span_iou``). Sort key is exactly
+    ``(-score, pred_index, gold_index)`` so equal IoU (or equal custom
+    scores) prefer lower prediction index, then lower gold index. Walk
+    assigns a pair when both indices are still unused. Empty ``predicted``
+    or ``gold`` returns ``[]``.
+
+    Complexity is O(n*m) in the lengths of ``predicted`` and ``gold``.
+    """
+    if not predicted or not gold:
+      return []
+    ranking_score = score_fn if score_fn is not None else span_iou
+    candidates: list[tuple[float, int, int]] = []
+    for pred_index, pred_extraction in enumerate(predicted):
+      for gold_index, gold_extraction in enumerate(gold):
+        if all(
+            criterion(pred_extraction, gold_extraction)
+            for criterion in criteria
+        ):
+          score = ranking_score(pred_extraction, gold_extraction)
+          candidates.append((score, pred_index, gold_index))
+    # Sort key (-score, pred_index, gold_index): IoU-desc, then lower indices.
+    candidates.sort(key=lambda item: (-item[0], item[1], item[2]))
+    used_pred: set[int] = set()
+    used_gold: set[int] = set()
+    matches: list[tuple[int, int]] = []
+    for _score, pred_index, gold_index in candidates:
+      if pred_index in used_pred or gold_index in used_gold:
+        continue
+      used_pred.add(pred_index)
+      used_gold.add(gold_index)
+      matches.append((pred_index, gold_index))
+    return matches
+
 
 ClassScore = Evaluator.ClassScore
 EvaluationReport = Evaluator.EvaluationReport
 prf_from_counts = Evaluator.prf_from_counts
 report_from_counts = Evaluator.report_from_counts
+greedy_match = Evaluator.greedy_match
 
 
 def _index_by_document_id(
