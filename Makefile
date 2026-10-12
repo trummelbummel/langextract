@@ -1,4 +1,4 @@
-.PHONY: env test trace
+.PHONY: env test trace evaluate-synthetic
 
 VENV := langextract_env
 PYTHON := python3
@@ -16,3 +16,6 @@ test:
 
 trace:
 	$(VENV)/bin/python scripts/trace_extract.py
+
+evaluate-synthetic:
+	$(VENV)/bin/python scripts/evaluate_synthetic.py
