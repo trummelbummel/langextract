@@ -19,14 +19,9 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Callable, Mapping, Sequence
 import dataclasses
+from typing import Protocol
 
 from langextract.core import data
-from langextract.evaluation.criteria import AttributesEqual
-from langextract.evaluation.criteria import MatchCriterion
-from langextract.evaluation.criteria import SameClass
-from langextract.evaluation.criteria import span_iou
-from langextract.evaluation.criteria import SpanIoU
-from langextract.evaluation.criteria import TextMatch
 
 __all__ = [
     "AttributesEqual",
@@ -47,6 +42,77 @@ __all__ = [
 
 class Evaluator:
   """Gold-set evaluation: metrics, matching, criteria, and orchestration."""
+
+  class MatchCriterion(Protocol):
+    """Yes/no match rule comparing a predicted extraction to gold."""
+
+    def __call__(
+        self, predicted: data.Extraction, gold: data.Extraction
+    ) -> bool:
+      ...
+
+  @staticmethod
+  def span_iou(a: data.Extraction, b: data.Extraction) -> float:
+    """Intersection-over-union of half-open CharIntervals (exclusive end_pos).
+
+    Returns 0.0 when either interval is missing, incomplete, inverted
+    (end < start), adjacent/touching with no overlap, or when union is 0.
+    """
+    ca, cb = a.char_interval, b.char_interval
+    if ca is None or cb is None:
+      return 0.0
+    s1, e1, s2, e2 = ca.start_pos, ca.end_pos, cb.start_pos, cb.end_pos
+    if None in (s1, e1, s2, e2):
+      return 0.0
+    if e1 < s1 or e2 < s2:
+      return 0.0
+    inter = max(0, min(e1, e2) - max(s1, s2))
+    if inter == 0:
+      return 0.0
+    union = (e1 - s1) + (e2 - s2) - inter
+    return inter / union if union else 0.0
+
+  @dataclasses.dataclass(frozen=True)
+  class SameClass:
+    """Match when predicted and gold share the same extraction_class."""
+
+    def __call__(
+        self, predicted: data.Extraction, gold: data.Extraction
+    ) -> bool:
+      return predicted.extraction_class == gold.extraction_class
+
+  @dataclasses.dataclass(frozen=True)
+  class SpanIoU:
+    """Match when span_iou(predicted, gold) >= threshold (default 0.5)."""
+
+    threshold: float = 0.5
+
+    def __call__(
+        self, predicted: data.Extraction, gold: data.Extraction
+    ) -> bool:
+      return Evaluator.span_iou(predicted, gold) >= self.threshold
+
+  @dataclasses.dataclass(frozen=True)
+  class AttributesEqual:
+    """Match when predicted and gold attributes dicts compare equal (==)."""
+
+    def __call__(
+        self, predicted: data.Extraction, gold: data.Extraction
+    ) -> bool:
+      return predicted.attributes == gold.attributes
+
+  @dataclasses.dataclass(frozen=True)
+  class TextMatch:
+    """Match by calling an injected text comparison function (D-02 / D-03)."""
+
+    text_eval_func: Callable[[str, str], bool]
+
+    def __call__(
+        self, predicted: data.Extraction, gold: data.Extraction
+    ) -> bool:
+      return bool(
+          self.text_eval_func(predicted.extraction_text, gold.extraction_text)
+      )
 
   @dataclasses.dataclass(frozen=True)
   class ClassScore:
@@ -107,7 +173,7 @@ class Evaluator:
   def greedy_match(
       predicted: Sequence[data.Extraction],
       gold: Sequence[data.Extraction],
-      criteria: Sequence[MatchCriterion],
+      criteria: Sequence[Evaluator.MatchCriterion],
       score_fn: (
           Callable[[data.Extraction, data.Extraction], float] | None
       ) = None,
@@ -125,7 +191,7 @@ class Evaluator:
     """
     if not predicted or not gold:
       return []
-    ranking_score = score_fn if score_fn is not None else span_iou
+    ranking_score = score_fn if score_fn is not None else Evaluator.span_iou
     candidates: list[tuple[float, int, int]] = []
     for pred_index, pred_extraction in enumerate(predicted):
       for gold_index, gold_extraction in enumerate(gold):
@@ -149,6 +215,12 @@ class Evaluator:
     return matches
 
 
+MatchCriterion = Evaluator.MatchCriterion
+span_iou = Evaluator.span_iou
+SameClass = Evaluator.SameClass
+SpanIoU = Evaluator.SpanIoU
+AttributesEqual = Evaluator.AttributesEqual
+TextMatch = Evaluator.TextMatch
 ClassScore = Evaluator.ClassScore
 EvaluationReport = Evaluator.EvaluationReport
 prf_from_counts = Evaluator.prf_from_counts
