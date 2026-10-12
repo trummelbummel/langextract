@@ -52,24 +52,28 @@ class Evaluator:
       ...
 
   @staticmethod
-  def span_iou(a: data.Extraction, b: data.Extraction) -> float:
+  def span_iou(predicted: data.Extraction, gold: data.Extraction) -> float:
     """Intersection-over-union of half-open CharIntervals (exclusive end_pos).
 
     Returns 0.0 when either interval is missing, incomplete, inverted
     (end < start), adjacent/touching with no overlap, or when union is 0.
     """
-    ca, cb = a.char_interval, b.char_interval
-    if ca is None or cb is None:
+    predicted_interval = predicted.char_interval
+    gold_interval = gold.char_interval
+    if predicted_interval is None or gold_interval is None:
       return 0.0
-    s1, e1, s2, e2 = ca.start_pos, ca.end_pos, cb.start_pos, cb.end_pos
-    if None in (s1, e1, s2, e2):
+    start1 = predicted_interval.start_pos
+    end1 = predicted_interval.end_pos
+    start2 = gold_interval.start_pos
+    end2 = gold_interval.end_pos
+    if None in (start1, end1, start2, end2):
       return 0.0
-    if e1 < s1 or e2 < s2:
+    if end1 < start1 or end2 < start2:
       return 0.0
-    inter = max(0, min(e1, e2) - max(s1, s2))
+    inter = max(0, min(end1, end2) - max(start1, start2))
     if inter == 0:
       return 0.0
-    union = (e1 - s1) + (e2 - s2) - inter
+    union = (end1 - start1) + (end2 - start2) - inter
     return inter / union if union else 0.0
 
   @dataclasses.dataclass(frozen=True)
