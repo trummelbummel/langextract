@@ -214,6 +214,32 @@ class Evaluator:
       matches.append((pred_index, gold_index))
     return matches
 
+  @staticmethod
+  def evaluate(
+      predicted: Sequence[data.AnnotatedDocument],
+      gold: Sequence[data.AnnotatedDocument],
+      *,
+      iou_threshold: float = 0.5,
+      match_attributes: bool = False,
+      text_eval_func: Callable[[str, str], bool] | None = None,
+      criteria: Sequence[Evaluator.MatchCriterion] | None = None,
+  ) -> Evaluator.EvaluationReport:
+    """Score predicted AnnotatedDocuments against a gold set.
+
+    Pairs documents by ``document_id`` (identical ID sets required; duplicates
+    within a side raise ``ValueError``). Per document, runs ``greedy_match``
+    then aggregates TP/FP/FN into per-class and micro scores. ``criteria=`` is
+    mutually exclusive with non-default convenience flags.
+    """
+    return _evaluate_documents(
+        predicted,
+        gold,
+        iou_threshold=iou_threshold,
+        match_attributes=match_attributes,
+        text_eval_func=text_eval_func,
+        criteria=criteria,
+    )
+
 
 MatchCriterion = Evaluator.MatchCriterion
 span_iou = Evaluator.span_iou
@@ -226,6 +252,7 @@ EvaluationReport = Evaluator.EvaluationReport
 prf_from_counts = Evaluator.prf_from_counts
 report_from_counts = Evaluator.report_from_counts
 greedy_match = Evaluator.greedy_match
+evaluate = Evaluator.evaluate
 
 
 def _index_by_document_id(
@@ -271,7 +298,7 @@ def _resolve_criteria(
   return resolved
 
 
-def evaluate(
+def _evaluate_documents(
     predicted: Sequence[data.AnnotatedDocument],
     gold: Sequence[data.AnnotatedDocument],
     *,
@@ -280,13 +307,7 @@ def evaluate(
     text_eval_func: Callable[[str, str], bool] | None = None,
     criteria: Sequence[MatchCriterion] | None = None,
 ) -> EvaluationReport:
-  """Score predicted AnnotatedDocuments against a gold set.
-
-  Pairs documents by ``document_id`` (identical ID sets required; duplicates
-  within a side raise ``ValueError``). Per document, runs ``greedy_match``
-  then aggregates TP/FP/FN into per-class and micro scores. ``criteria=`` is
-  mutually exclusive with non-default convenience flags.
-  """
+  """Score predicted AnnotatedDocuments against a gold set (implementation)."""
   match_criteria = _resolve_criteria(
       iou_threshold=iou_threshold,
       match_attributes=match_attributes,
