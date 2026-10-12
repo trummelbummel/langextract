@@ -507,6 +507,38 @@ _IDENTITY_WRAP_FACTORIES: dict[str, _WrapFactory] = {
 }
 
 
+def _merge_wrap_factories(
+    wrappers: Mapping[str, _WrapFactory] | None,
+) -> dict[str, _WrapFactory]:
+  """Overlay supplied wrappers on the identity factories, rejecting unknowns."""
+  factories = dict(_IDENTITY_WRAP_FACTORIES)
+  if wrappers:
+    unknown = set(wrappers) - set(_IDENTITY_WRAP_FACTORIES)
+    if unknown:
+      raise ValueError(
+          'unknown wrapper label(s): ' + ', '.join(sorted(unknown))
+      )
+    factories.update(wrappers)
+  return factories
+
+
+def _install_probes(
+    targets: Mapping[str, tuple[type, str]],
+    factories: Mapping[str, _WrapFactory],
+) -> list[tuple[type, str, Callable[..., Any]]]:
+  """Wrap every target; on failure restore the installed ones and re-raise."""
+  saved: list[tuple[type, str, Callable[..., Any]]] = []
+  try:
+    for label, (cls, attr) in targets.items():
+      original = cls.__dict__[attr]
+      setattr(cls, attr, factories[label](original))
+      saved.append((cls, attr, original))
+  except Exception:
+    _restore_probe_attrs(saved)
+    raise
+  return saved
+
+
 @contextlib.contextmanager
 def trace_probes(
     wrappers: Mapping[str, _WrapFactory] | None = None,
@@ -527,26 +559,8 @@ def trace_probes(
     raise RuntimeError('trace_probes() already active')
 
   targets = _load_probe_targets()
-  factories = dict(_IDENTITY_WRAP_FACTORIES)
-  if wrappers:
-    unknown = set(wrappers) - set(_IDENTITY_WRAP_FACTORIES)
-    if unknown:
-      raise ValueError(
-          'unknown wrapper label(s): ' + ', '.join(sorted(unknown))
-      )
-    factories.update(wrappers)
-
-  saved: list[tuple[type, str, Callable[..., Any]]] = []
-  try:
-    for label, (cls, attr) in targets.items():
-      original = cls.__dict__[attr]
-      setattr(cls, attr, factories[label](original))
-      saved.append((cls, attr, original))
-  except Exception:
-    _restore_probe_attrs(saved)
-    _PROBES_ACTIVE = False
-    raise
-
+  factories = _merge_wrap_factories(wrappers)
+  saved = _install_probes(targets, factories)
   _PROBES_ACTIVE = True
   try:
     yield
@@ -630,7 +644,7 @@ def _print_align_section(
 def print_stage_records(
     records: Iterable[StageRecord], config: Mapping[str, Any]
 ) -> None:
-  """Print captured stages in catalog order with in:/out: blocks.
+  """Print captured stages in catalog order with marked in/out/path blocks.
 
   :param records: Records collected by the stage wrappers, in capture order.
   :param config: Config mapping providing the empty-parse callout sentences.
@@ -645,24 +659,18 @@ def print_stage_records(
     if printed_any:
       print()
     printed_any = True
-    print(f'[{label}] {function_name} — {path}')
+    print(f'[{label}] {function_name}')
+    _print_block('%%%%%%', {'path': path})
     for i, record in enumerate(by_label[label]):
-      if label == 'chunk':
-        _print_block('##########', record.in_data)
-        out_data = dict(record.out_data)
-        document_id = out_data.pop('document_id', None)
-        _print_block('*******', out_data)
-        _print_block('%%%%%%', {'document_id': document_id})
-      else:
-        _print_block('in', record.in_data)
-        if label == 'parse' and not record.out_data['extractions']:
-          print(_parse_callout(record.out_data['parse_error'], config))
-        _print_block('out', record.out_data)
-        if label == 'align':
-          parses = by_label.get('parse', [])
-          _print_align_section(
-              record, parses[i] if i < len(parses) else None, config
-          )
+      _print_block('##########', record.in_data)
+      if label == 'parse' and not record.out_data['extractions']:
+        print(_parse_callout(record.out_data['parse_error'], config))
+      _print_block('*******', record.out_data)
+      if label == 'align':
+        parses = by_label.get('parse', [])
+        _print_align_section(
+            record, parses[i] if i < len(parses) else None, config
+        )
 
 
 def _copy_attributes(
@@ -915,17 +923,11 @@ def _load_document_text(document_path: str | Path) -> str:
   return path.read_text(encoding='utf-8')
 
 
-def _extract_kwargs(config: Mapping[str, Any]) -> dict[str, Any]:
-  """Build the pinned lx.extract keyword arguments from config.
+def _build_examples(config: Mapping[str, Any]) -> list[Any]:
+  """Build lx.data.ExampleData items from config['examples']."""
+  import langextract as lx  # pylint: disable=import-outside-toplevel
 
-  :param config: Config mapping with the call constants.
-  :return: Keyword arguments for one local-Ollama lx.extract call.
-  """
-  # pylint: disable=import-outside-toplevel
-  import langextract as lx
-  from langextract.providers import ollama
-
-  examples = [
+  return [
       lx.data.ExampleData(
           text=example['text'],
           extractions=[
@@ -938,10 +940,21 @@ def _extract_kwargs(config: Mapping[str, Any]) -> dict[str, Any]:
       )
       for example in config['examples']
   ]
+
+
+def _extract_kwargs(config: Mapping[str, Any]) -> dict[str, Any]:
+  """Build the pinned lx.extract keyword arguments from config.
+
+  :param config: Config mapping with the call constants.
+  :return: Keyword arguments for one local-Ollama lx.extract call.
+  """
+  # pylint: disable=import-outside-toplevel
+  from langextract.providers import ollama
+
   return {
       'text_or_documents': _load_document_text(config['document_path']),
       'prompt_description': config['prompt_description'],
-      'examples': examples,
+      'examples': _build_examples(config),
       'model_id': config['model_id'],
       'model_url': config['model_url'],
       'max_char_buffer': config['max_char_buffer'],

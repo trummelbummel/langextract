@@ -27,16 +27,22 @@ context_window_chars: 200
 
 # Prompt description for the live call
 prompt_description: >
-  Extract rules as single sentences for code style or deduplication reviews.
+  Extract coding rules as single sentences as bullet points about code style, review process,
+  or deduplication. Use extraction_class coding_rule. Use the exact wording
+  from the source for each extraction_text.
 
 # One few-shot example for the live call; texts appear verbatim in its text
 examples:
-  - text: He has a cough and takes aspirin.
+  - text: >
+      Keep SKILL.md under 500 lines. Do not ask the LLM to check what a tool
+      can verify. Flag duplicated knowledge at the second copy.
     extractions:
-      - extraction_class: symptom
-        extraction_text: cough
-      - extraction_class: medication
-        extraction_text: aspirin
+      - extraction_class: coding_rule
+        extraction_text: Keep SKILL.md under 500 lines.
+      - extraction_class: coding_rule
+        extraction_text: Do not ask the LLM to check what a tool can verify.
+      - extraction_class: coding_rule
+        extraction_text: Flag duplicated knowledge at the second copy.
 
 # Seconds to wait for GET /api/tags before the live call
 preflight_timeout_s: 5

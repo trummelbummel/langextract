@@ -14,6 +14,8 @@
 
 """Tests for scripts/trace_extract.py extraction snapshots."""
 
+from __future__ import annotations
+
 import contextlib
 import http.server
 import importlib.util
@@ -26,10 +28,12 @@ import sys
 import tempfile
 import threading
 import time
+import types
 from unittest import mock
 
 from absl.testing import absltest
 from absl.testing import parameterized
+import pytest
 import yaml
 
 from langextract import chunking
@@ -52,7 +56,7 @@ _CANNED = (
 )
 
 
-def _load_script_module():
+def _load_script_module() -> types.ModuleType:
   """Loads scripts/trace_extract.py as a module."""
   spec = importlib.util.spec_from_file_location("trace_extract", _SCRIPT_PATH)
   module = importlib.util.module_from_spec(spec)
@@ -72,7 +76,9 @@ _STAGE_TARGETS = {
 }
 
 
-def _patch_stages(test, wrappers, labels):
+def _patch_stages(
+    test: absltest.TestCase, wrappers: dict, labels: list[str]
+) -> None:
   """Installs wrappers[label](original) on each target; restored by cleanup."""
   for label in labels:
     cls, attr = _STAGE_TARGETS[label]
@@ -80,7 +86,9 @@ def _patch_stages(test, wrappers, labels):
     test.enter_context(mock.patch.object(cls, attr, replacement))
 
 
-def _run_offline_extract(test, canned):
+def _run_offline_extract(
+    test: absltest.TestCase, canned: str
+) -> tuple[data.AnnotatedDocument, int]:
   """Runs the real lx.extract with only _ollama_query faked.
 
   Returns:
@@ -123,7 +131,7 @@ class TraceExtractSnapshotTest(absltest.TestCase):
     )
     self.resolved = self.resolver.resolve(_CANNED, suppress_parse_errors=True)
 
-  def _align(self):
+  def _align(self) -> list[data.Extraction]:
     return list(
         self.resolver.align(
             self.resolved, _SOURCE_TEXT, token_offset=0, char_offset=0
@@ -154,10 +162,7 @@ class TraceExtractSnapshotTest(absltest.TestCase):
     parse = self.trace.snapshot_extractions(self.resolved)
     align = self.trace.snapshot_extractions(self._align())
 
-    buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
-      self.trace.print_grounding_pair(parse, align, "ungrounded")
-    lines = buf.getvalue().splitlines()
+    lines = self._print_pair(parse, align)
 
     self.assertIn("grounding pair", lines[0])
     idx = next(i for i, ln in enumerate(lines) if "'headache'" in ln)
@@ -169,7 +174,7 @@ class TraceExtractSnapshotTest(absltest.TestCase):
     self.assertIn("[18, 26)", align_line)
     self.assertIn("match_exact", align_line)
 
-  def _print_pair(self, parse, align):
+  def _print_pair(self, parse, align) -> list[str]:
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
       self.trace.print_grounding_pair(parse, align, "ungrounded")
@@ -203,7 +208,14 @@ class TraceExtractSnapshotTest(absltest.TestCase):
     self.assertIn("[18, 26)", lines[grounded + 2])
     self.assertIn("match_exact", lines[grounded + 2])
 
-  def _snap(self, text, start=None, end=None, index=1, cls="symptom"):
+  def _snap(
+      self,
+      text: str,
+      start: int | None = None,
+      end: int | None = None,
+      index: int = 1,
+      cls: str = "symptom",
+  ):
     char = None if start is None else (start, end)
     return self.trace.ExtractionSnapshot(
         extraction_class=cls,
@@ -309,13 +321,13 @@ class TraceExtractWrapperTest(parameterized.TestCase):
     self.config = self.trace.load_config(self.trace._CONFIG_PATH)
     self.sink = []
 
-  def _print_records(self, records):
+  def _print_records(self, records) -> str:
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
       self.trace.print_stage_records(records, self.config)
     return buf.getvalue()
 
-  def _model_record(self, raw_text, prompt="PROMPT TEXT"):
+  def _model_record(self, raw_text: str, prompt: str = "PROMPT TEXT"):
     return self.trace.StageRecord(
         "model",
         {"batch_prompts": (prompt,), "batch_size": 1, "kwargs": {}},
@@ -348,12 +360,11 @@ class TraceExtractWrapperTest(parameterized.TestCase):
     printed = self._print_records([record])
 
     lines = printed.splitlines()
-    self.assertEqual(
-        lines[0],
-        "[model] OllamaLanguageModel.infer — langextract/providers/ollama.py",
-    )
-    self.assertIn("in:", lines)
-    self.assertIn("out:", lines)
+    self.assertEqual(lines[0], "[model] OllamaLanguageModel.infer")
+    self.assertIn("%%%%%%:", lines)
+    self.assertIn("    langextract/providers/ollama.py", lines)
+    self.assertIn("##########:", lines)
+    self.assertIn("*******:", lines)
     self.assertIn("FULL PROMPT", printed)
     self.assertIn("    café\\x1b[31m", lines)
     self.assertIn("    line2", lines)
@@ -372,72 +383,24 @@ class TraceExtractWrapperTest(parameterized.TestCase):
     self.assertLess(printed.index("[chunk]"), printed.index("[model]"))
     self.assertNotIn("[prompt]", printed)
 
-  def test_print_stage_records_chunk_uses_hash_and_star_block_titles(self):
-    chunk = self.trace.StageRecord(
-        "chunk",
-        {"text_or_documents": "doc text"},
-        {"chunk_text": "chunk body"},
-    )
-
-    printed = self._print_records([chunk])
-    lines = printed.splitlines()
-
-    self.assertIn("##########:", lines)
-    self.assertIn("*******:", lines)
-    self.assertNotIn("in:", lines)
-    self.assertNotIn("out:", lines)
-
-  def test_print_stage_records_model_still_uses_in_out_titles(self):
-    printed = self._print_records([self._model_record("x")])
-    lines = printed.splitlines()
-
-    self.assertIn("in:", lines)
-    self.assertIn("out:", lines)
-    self.assertNotIn("##########:", lines)
-    self.assertNotIn("*******:", lines)
-
-  def test_print_stage_records_chunk_marks_document_id_with_percent_run(self):
+  def test_print_stage_records_all_stages_use_hash_star_and_path_markers(self):
     chunk = self.trace.StageRecord(
         "chunk",
         {"text_or_documents": "doc text"},
         {"chunk_text": "chunk body", "document_id": "doc-42"},
     )
 
-    printed = self._print_records([chunk])
+    printed = self._print_records([chunk, self._model_record("x")])
     lines = printed.splitlines()
 
-    self.assertIn("%%%%%%:", lines)
-    percent_at = lines.index("%%%%%%:")
-    self.assertTrue(
-        any("doc-42" in line for line in lines[percent_at : percent_at + 3])
-    )
-    star_at = lines.index("*******:")
-    next_title = next(
-        (
-            i
-            for i, line in enumerate(lines)
-            if i > star_at and line.endswith(":") and not line.startswith(" ")
-        ),
-        len(lines),
-    )
-    out_block = lines[star_at:next_title]
-    self.assertFalse(any("document_id" in line for line in out_block))
-
-  def test_print_stage_records_chunk_marks_none_document_id(self):
-    chunk = self.trace.StageRecord(
-        "chunk",
-        {"text_or_documents": "doc text"},
-        {"chunk_text": "chunk body", "document_id": None},
-    )
-
-    printed = self._print_records([chunk])
-    lines = printed.splitlines()
-
-    self.assertIn("%%%%%%:", lines)
-    percent_at = lines.index("%%%%%%:")
-    self.assertTrue(
-        any("None" in line for line in lines[percent_at : percent_at + 3])
-    )
+    self.assertEqual(lines.count("##########:"), 2)
+    self.assertEqual(lines.count("*******:"), 2)
+    self.assertEqual(lines.count("%%%%%%:"), 2)
+    self.assertIn("    langextract/chunking.py", lines)
+    self.assertIn("    langextract/providers/ollama.py", lines)
+    self.assertNotIn("in:", lines)
+    self.assertNotIn("out:", lines)
+    self.assertIn("doc-42", printed)
 
   def test_model_wrapper_redacts_forwarded_kwargs(self):
     def original(self, batch_prompts, **kwargs):
@@ -514,11 +477,14 @@ class TraceExtractWrapperTest(parameterized.TestCase):
 
     printed = self._print_records(list(reversed(self.sink)))
 
-    chunk_at = printed.index("[chunk] ChunkIterator — langextract/chunking.py")
+    chunk_at = printed.index("[chunk] ChunkIterator")
     prompt_at = printed.index("[prompt] ContextAwarePromptBuilder.build_prompt")
     model_at = printed.index("[model] OllamaLanguageModel.infer")
     self.assertLess(chunk_at, prompt_at)
     self.assertLess(prompt_at, model_at)
+    self.assertIn("    langextract/chunking.py", printed)
+    self.assertIn("    langextract/prompting.py", printed)
+    self.assertIn("    langextract/providers/ollama.py", printed)
 
   def test_parse_wrapper_records_raw_text_flags_and_ungrounded_snapshots(self):
     document, _ = self._run_traced_extract(["model", "parse"])
@@ -555,7 +521,8 @@ class TraceExtractWrapperTest(parameterized.TestCase):
 
     printed = self._print_records(self.sink)
 
-    self.assertIn("[parse] Resolver.resolve — langextract/resolver.py", printed)
+    self.assertIn("[parse] Resolver.resolve", printed)
+    self.assertIn("    langextract/resolver.py", printed)
     parse_part = printed[printed.index("[parse]") :]
     self.assertIn(_CANNED, parse_part)
     self.assertIn("flags:", parse_part)
@@ -563,7 +530,7 @@ class TraceExtractWrapperTest(parameterized.TestCase):
     self.assertIn("wrapper_key': 'extractions'", parse_part)
     self.assertIn("extractions:", parse_part)
 
-  def _parse_section(self, canned):
+  def _parse_section(self, canned: str) -> str:
     wrappers = self.trace.make_stage_wrappers(self.sink, self.config)
     _patch_stages(self, wrappers, ["model", "parse"])
     _run_offline_extract(self, canned)
@@ -607,7 +574,7 @@ class TraceExtractWrapperTest(parameterized.TestCase):
     self.assertIn(shown, section)
     for name in other:
       self.assertNotIn(self.config[name].strip(), section)
-    self.assertLess(section.index(shown), section.index("\nout:"))
+    self.assertLess(section.index(shown), section.index("\n*******:"))
     self.assertLess(section.index("raw_model_text"), section.index(shown))
     if error:
       self.assertIn(error, section)
@@ -675,13 +642,15 @@ class TraceExtractWrapperTest(parameterized.TestCase):
     document, _ = _run_offline_extract(self, canned)
     return document, self._print_records(self.sink)
 
-  def _span_lines(self, section):
-    return [l for l in section.splitlines() if "  span=" in l]
+  def _span_lines(self, section: str) -> list[str]:
+    return [ln for ln in section.splitlines() if "  span=" in ln]
 
   def _align_record(self):
     return next(r for r in self.sink if r.label == "align")
 
-  def _direct_align_section(self, token_offset, char_offset):
+  def _direct_align_section(
+      self, token_offset: int, char_offset: int | None
+  ) -> str:
     wrappers = self.trace.make_stage_wrappers(self.sink, self.config)
     _patch_stages(self, wrappers, ["align"])
     parser = resolver.Resolver(format_handler=ollama.OLLAMA_FORMAT_HANDLER)
@@ -804,7 +773,7 @@ class TraceExtractProbeTest(absltest.TestCase):
     super().setUp()
     self.trace = _load_script_module()
 
-  def _originals(self):
+  def _originals(self) -> dict:
     return {
         label: cls.__dict__[attr]
         for label, (cls, attr) in _STAGE_TARGETS.items()
@@ -1134,6 +1103,19 @@ class _StubOllama(http.server.ThreadingHTTPServer):
     return f"http://127.0.0.1:{self.server_address[1]}"
 
 
+def _write_tmp_doc(
+    test: absltest.TestCase, text: str, name: str
+) -> pathlib.Path:
+  """Writes text to a file in a fresh temp dir cleaned up with the test."""
+  # TemporaryDirectory (not absl create_tempdir): make test runs under pytest,
+  # where --test_tmpdir is unset and create_tempdir raises
+  # UnparsedFlagAccessError.
+  tmp = pathlib.Path(test.enter_context(tempfile.TemporaryDirectory()))
+  doc = tmp / name
+  doc.write_text(text, encoding="utf-8")
+  return doc
+
+
 def _start_stub(test: absltest.TestCase) -> _StubOllama:
   """Start a stub Ollama server and register shutdown on the test."""
   stub = _StubOllama()
@@ -1145,7 +1127,7 @@ def _start_stub(test: absltest.TestCase) -> _StubOllama:
 
 class _StubHandler(http.server.BaseHTTPRequestHandler):
 
-  def log_message(self, *args) -> None:
+  def log_message(self, *args: object) -> None:
     pass
 
   def _reply(
@@ -1171,7 +1153,7 @@ class _StubHandler(http.server.BaseHTTPRequestHandler):
     self._reply(_STUB_GENERATE_BODY)
 
 
-class TraceExtractDocumentTest(absltest.TestCase):
+class TraceExtractDocumentTest(parameterized.TestCase):
   """Config document_path → text_or_documents (quick 261011-cst)."""
 
   def setUp(self):
@@ -1222,21 +1204,20 @@ class TraceExtractDocumentTest(absltest.TestCase):
     self.assertStartsWith(err.getvalue(), "Error:")
     self.assertIn(str(missing.resolve()), err.getvalue())
 
-  def test_extract_kwargs_includes_chunk_buffer_from_config(self):
+  @parameterized.named_parameters(
+      dict(testcase_name="set_window", buffer=2500, window=120),
+      dict(testcase_name="null_window", buffer=1000, window=None),
+  )
+  def test_extract_kwargs_passes_chunk_settings_from_config(
+      self, buffer, window
+  ):
     config = self._config_with_doc("short")
-    config["max_char_buffer"] = 2500
-    config["context_window_chars"] = 120
+    config["max_char_buffer"] = buffer
+    config["context_window_chars"] = window
     kwargs = self.trace._extract_kwargs(config)
-    self.assertEqual(kwargs["max_char_buffer"], 2500)
-    self.assertEqual(kwargs["context_window_chars"], 120)
-
-  def test_extract_kwargs_passes_null_context_window_chars(self):
-    config = self._config_with_doc("short")
-    config["max_char_buffer"] = 1000
-    config["context_window_chars"] = None
-    kwargs = self.trace._extract_kwargs(config)
+    self.assertEqual(kwargs["max_char_buffer"], buffer)
     self.assertIn("context_window_chars", kwargs)
-    self.assertIsNone(kwargs["context_window_chars"])
+    self.assertEqual(kwargs["context_window_chars"], window)
 
 
 class TraceExtractLiveTest(absltest.TestCase):
@@ -1247,11 +1228,10 @@ class TraceExtractLiveTest(absltest.TestCase):
     self.trace = _load_script_module()
     self.config = self.trace.load_config(self.trace._CONFIG_PATH)
     # Short temp document so the stub still sees exactly one /api/generate.
-    tmp = pathlib.Path(self.enter_context(tempfile.TemporaryDirectory()))
-    doc = tmp / "short.txt"
-    doc.write_text(
+    doc = _write_tmp_doc(
+        self,
         "Patient reports a headache since Monday and takes ibuprofen.",
-        encoding="utf-8",
+        "short.txt",
     )
     self.config = {**self.config, "document_path": str(doc)}
     self.stub = _start_stub(self)
@@ -1322,12 +1302,8 @@ class TraceExtractPreflightTest(parameterized.TestCase):
     super().setUp()
     self.trace = _load_script_module()
     self.stub = _start_stub(self)
-    # TemporaryDirectory (not absl create_tempdir): make test runs under pytest,
-    # where --test_tmpdir is unset and create_tempdir raises UnparsedFlagAccessError.
-    tmp = pathlib.Path(self.enter_context(tempfile.TemporaryDirectory()))
-    doc = tmp / "short.txt"
-    doc.write_text(
-        "short clinical sentence for preflight tests.", encoding="utf-8"
+    doc = _write_tmp_doc(
+        self, "short clinical sentence for preflight tests.", "short.txt"
     )
     self.config = {
         **self.trace.load_config(self.trace._CONFIG_PATH),
@@ -1336,7 +1312,7 @@ class TraceExtractPreflightTest(parameterized.TestCase):
         "document_path": str(doc),
         "max_char_buffer": 1000,
     }
-    config_path = tmp / "config.yaml"
+    config_path = doc.parent / "config.yaml"
     config_path.write_text(yaml.safe_dump(self.config), encoding="utf-8")
     self.enter_context(
         mock.patch.object(self.trace, "_CONFIG_PATH", config_path)
@@ -1408,6 +1384,7 @@ class TraceExtractPreflightTest(parameterized.TestCase):
         self.trace.preflight_ollama(url, "gemma3:4b", 1.0)
 
 
+@pytest.mark.integration
 @absltest.skipUnless(
     os.environ.get("TRACE_LIVE_OLLAMA") == "1",
     "set TRACE_LIVE_OLLAMA=1 to hit local Ollama",
@@ -1435,11 +1412,10 @@ class TraceExtractGuardTest(absltest.TestCase):
     super().setUp()
     self.trace = _load_script_module()
     self.base = self.trace.load_config(self.trace._CONFIG_PATH)
-    tmp = pathlib.Path(self.enter_context(tempfile.TemporaryDirectory()))
-    self.doc = tmp / "doc.txt"
-    self.doc.write_text(
+    self.doc = _write_tmp_doc(
+        self,
         "Patient reports a headache since Monday and takes ibuprofen.",
-        encoding="utf-8",
+        "doc.txt",
     )
     self.stub = _start_stub(self)
     self.config = {

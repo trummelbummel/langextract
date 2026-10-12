@@ -47,7 +47,11 @@ def _has_preconfigured_output_schema(model: typing.Any) -> bool:
 def _drop_ungrounded(doc: data.AnnotatedDocument) -> data.AnnotatedDocument:
   """Keep only extractions whose char_interval is set; log removals at INFO."""
   extractions = doc.extractions or []
-  kept = [e for e in extractions if e.char_interval is not None]
+  kept = [
+      extraction
+      for extraction in extractions
+      if extraction.char_interval is not None
+  ]
   removed_count = len(extractions) - len(kept)
   if removed_count > 0:
     logging.info(

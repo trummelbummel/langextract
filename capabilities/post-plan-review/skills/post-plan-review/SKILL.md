@@ -11,7 +11,8 @@ description: >
 <objective>
 Close the loop after executor commits: polish the diff with style + dedup
 reviews (committed), then give the human a clean commit list to approve or undo
-before any further plan or quick task runs.
+**and** a joint triage of every style REPORTED finding and dedup propose-only
+item before any further plan or quick task runs.
 </objective>
 
 <required_skills>
@@ -73,11 +74,15 @@ Read and **fully execute** the style-review skill on the scoped files
 After it finishes:
 
 1. Write `{artifact_dir}/{id}-STYLE-REVIEW.md` with plan/quick id, commit
-   range, timestamp, refactors, remaining findings (incl. R15 verdicts).
+   range, timestamp, refactors, remaining findings (incl. R15 verdicts) and
+   the coverage line. Copy the merged ledger to
+   `{artifact_dir}/{id}-STYLE-LEDGER.jsonl`. Do not continue unless the
+   style-review coverage gate (`rules.py check`) passed or the report lists
+   every unreviewed cell.
 2. If code/test changes or the new artifact need committing:
 
 ```bash
-gsd_run query commit "refactor({id}): apply style-review" --files <changed paths> "{artifact_dir}/{id}-STYLE-REVIEW.md"
+gsd_run query commit "refactor({id}): apply style-review" --files <changed paths> "{artifact_dir}/{id}-STYLE-REVIEW.md" "{artifact_dir}/{id}-STYLE-LEDGER.jsonl"
 ```
 
 If `gsd_run` is unavailable, use normal `git add` + `git commit` with the same
@@ -142,8 +147,19 @@ git diff --stat "$base^" "$tip" -- $(cat "$d/files")
    `/Applications/Cursor.app/Contents/Resources/app/bin/cursor` into PATH)
    and tell the user to inspect with `git diff {base}^ {tip}` instead.
 
-2. Ask for **one** verdict covering all commits (AskUserQuestion when
-   available; otherwise print and **stop and wait**). Never auto-approve:
+2. Collect **open findings** from the artifacts just written (do not invent
+   new ones):
+   - Style: every `REPORTED` row in `{id}-STYLE-REVIEW.md` / ledger
+   - Dedup: every **Propose-only** row in `{id}-DEDUP-REVIEW.md`
+   Deduplicate when style and dedup describe the same change (one bullet,
+   cite both IDs). If both lists are empty, say so explicitly.
+
+3. Ask for **one joint reply** covering commits **and** findings
+   (AskUserQuestion when available; otherwise print and **stop and wait**).
+   Never auto-approve commits. Never silently defer findings — always
+   surface them in this same gate, even when the commit verdict is already
+   clear. Group findings by cost (safe / API-breaking / conflicts with a
+   locked plan) so the human can pick quickly:
 
 ```
 ## Human commit review — {id}
@@ -157,10 +173,14 @@ All changed files are open as diffs in the editor. Artifacts:
   {artifact_dir}/{id}-STYLE-REVIEW.md
   {artifact_dir}/{id}-DEDUP-REVIEW.md
 
-Reply with one of:
-  - approved     → allow the next plan / wave / quick task
-  - undo         → revert this id's commits (confirm first)
-  - <feedback>   → stay halted until approved or undo
+### Open findings (style REPORTED + dedup propose-only)
+{numbered list: ID — one-line summary — cost: safe | breaking | locked-conflict}
+(or: none)
+
+Reply with:
+  1. Commit verdict: approved | undo | <feedback>
+  2. Findings: none | all-safe | <ids to implement> | defer:<ids> | skip:<ids>
+     (combine freely, e.g. "approved; implement 1,3; skip 2; defer rest")
 ```
 
 If `undo`:
@@ -169,9 +189,20 @@ If `undo`:
   `git revert --no-edit <hashes newest-first>` (or soft-reset only if the user
   explicitly asks and nothing else landed after). Do not use `/gsd-undo` for
   quick ids unless that command gains quick support.
-- After undo, STOP (do not advance).
+- After undo, STOP (do not advance). Do not implement findings after undo.
 
-If `approved`, end successfully so the host may continue.
+If commit verdict is `approved` (or feedback that keeps the commits):
+- For findings marked **implement** / **all-safe**: apply them now under the
+  diff budget (separate commit(s) `refactor({id}): address review finding
+  {rule-or-signal}`), re-run the relevant tests, then STOP so the human can
+  approve those follow-up commits before the next plan/quick.
+- For **defer**: note them in the artifact (or a one-line STATE/backlog
+  mention) and leave the code alone.
+- For **skip** / **none**: leave them alone; do not re-ask later in this gate.
+- If the human only answers the commit half, **ask once more** for the
+  findings half before ending. Do not treat silence as skip.
+
+Only end the gate as fully complete when both halves have an explicit answer.
 </step>
 
 </process>
