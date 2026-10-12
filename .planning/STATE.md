@@ -34,7 +34,7 @@ Phase: 07 (Gold-set evaluation metrics) — COMPLETE
 Current Plan: 5/5
 Total Plans in Phase: 5
 Status: Phase complete — verified
-Last activity: 2026-10-12 - Completed quick task 261012-922: consolidate evaluation into one Evaluator class
+Last activity: 2026-10-12 - Completed quick task 261012-9pt: synthetic evaluate demo script
 
 Progress: [████████░░] 83%
 
@@ -155,6 +155,7 @@ None yet.
 | 261011-d60 | Mark chunk walkthrough input/output/file id with distinctive delimiter runs | 2026-10-11 | 98b6587 | [261011-d60-the-input-output-and-chunk-chunkiterator](./quick/261011-d60-the-input-output-and-chunk-chunkiterator/) |
 | 261011-p2z | Drop ungrounded extractions via opt-in drop_ungrounded on lx.extract() | 2026-10-11 | d84f459 | [261011-p2z-drop-extractions-whose-char-interval-is-](./quick/261011-p2z-drop-extractions-whose-char-interval-is-/) |
 | 261012-922 | Reduce the number of classes in langextract.evaluation: put everything in one file and consolidate into one class as much as possible while keeping public API and tests green. | 2026-10-12 | 3d88338 | [261012-922-reduce-the-number-of-classes-in-langextr](./quick/261012-922-reduce-the-number-of-classes-in-langextr/) |
+| 261012-9pt | write a small script with synthetic data that calls the evaluator and writes the report, also annotate the ground truth data in the script with expected results for the evaluator | 2026-10-12 | 8b8b87f | [261012-9pt-write-a-small-script-with-synthetic-data](./quick/261012-9pt-write-a-small-script-with-synthetic-data/) |
 
 ## Deferred Items
 
