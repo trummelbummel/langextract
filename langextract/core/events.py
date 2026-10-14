@@ -18,7 +18,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import dataclasses
-import logging
+
+from absl import logging
 
 from langextract.core import types
 
@@ -109,5 +110,6 @@ class Dispatcher:
             "on_event observer failed for %s: %s",
             getattr(event, "name", type(event).__name__),
             exc,
+            exc_info=True,
         )
         self._logged_failure = True
