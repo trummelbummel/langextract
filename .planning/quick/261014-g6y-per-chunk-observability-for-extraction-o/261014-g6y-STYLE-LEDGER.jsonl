@@ -1,0 +1,449 @@
+{"rule":"R04","file":"langextract/annotation.py","status":"PASS","line":null,"note":"no new multi-value scalar/tuple returns; events and _ChunkEmitMeta are structured"}
+{"rule":"R04","file":"langextract/core/events.py","status":"PASS","line":null,"note":"emit returns None; factories return Dispatcher; event types are structured"}
+{"rule":"R04","file":"langextract/core/types.py","status":"PASS","line":null,"note":"TokenUsage/ScoredOutput are structured value returns"}
+{"rule":"R04","file":"langextract/extraction.py","status":"PASS","line":null,"note":"extract returns AnnotatedDocument(s); no new tuple returns"}
+{"rule":"R04","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"_usage_from_response returns TokenUsage; pre-existing _build_request_options tuple unchanged"}
+{"rule":"R04","file":"tests/chunk_events_test.py","status":"PASS","line":null,"note":"oracle tuples are test projections of event fields, not production returns"}
+{"rule":"R04","file":"tests/inference_test.py","status":"PASS","line":null,"note":"tests assert on TokenUsage fields; no production tuple returns"}
+{"rule":"R13","file":"langextract/annotation.py","status":"PASS","line":null,"note":"uses core event/TokenUsage dataclasses matching repo core contracts (not Pydantic)"}
+{"rule":"R13","file":"langextract/core/events.py","status":"PASS","line":null,"note":"plan requires frozen dataclasses for on_event; matches ScoredOutput/Extraction style"}
+{"rule":"R13","file":"langextract/core/types.py","status":"PASS","line":null,"note":"TokenUsage follows existing frozen-dataclass core types, not Pydantic"}
+{"rule":"R13","file":"langextract/extraction.py","status":"PASS","line":null,"note":"on_event typed as EventCallback; no new raw dict contracts"}
+{"rule":"R13","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"maps Mapping response into TokenUsage at provider boundary"}
+{"rule":"R13","file":"tests/chunk_events_test.py","status":"PASS","line":null,"note":"test fixtures; Pydantic not required"}
+{"rule":"R13","file":"tests/inference_test.py","status":"PASS","line":null,"note":"test fixtures; Pydantic not required"}
+{"rule":"R39","file":"langextract/annotation.py","status":"FIXED","line":48,"note":"replaced chunk_meta 4-tuple with private frozen _ChunkEmitMeta"}
+{"rule":"R39","file":"langextract/core/events.py","status":"REPORTED","line":38,"note":"ChunkStarted/ChunkFinished/ParseFailed repeat document_id,chunk_index,char_start,char_end,pass_index,batch_index; suggest frozen ChunkRef composed into each event (would change public constructors)"}
+{"rule":"R39","file":"langextract/core/types.py","status":"PASS","line":null,"note":"TokenUsage fields travel as one type already"}
+{"rule":"R39","file":"langextract/extraction.py","status":"PASS","line":null,"note":"no new multi-parameter clumps; on_event alone"}
+{"rule":"R39","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"usage fields assembled once into TokenUsage"}
+{"rule":"R39","file":"tests/chunk_events_test.py","status":"PASS","line":null,"note":"oracle tuples mirror public event fields for assertions only"}
+{"rule":"R39","file":"tests/inference_test.py","status":"PASS","line":null,"note":"no data clumps in new tests"}
+{"rule":"R40","file":"langextract/annotation.py","status":"PASS","line":null,"note":"event emission returns via emit; no out-parameter mutation added"}
+{"rule":"R40","file":"langextract/core/events.py","status":"PASS","line":null,"note":"emit mutates only self failure flag; callback protocol is fire-and-forget"}
+{"rule":"R40","file":"langextract/core/types.py","status":"PASS","line":null,"note":"value types; no output parameters"}
+{"rule":"R40","file":"langextract/extraction.py","status":"PASS","line":null,"note":"no output parameters"}
+{"rule":"R40","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"_usage_from_response returns TokenUsage"}
+{"rule":"R40","file":"tests/chunk_events_test.py","status":"PASS","line":null,"note":"observer appends to self.events by design"}
+{"rule":"R40","file":"tests/inference_test.py","status":"PASS","line":null,"note":"no output parameters"}
+{"rule":"R41","file":"langextract/annotation.py","status":"PASS","line":null,"note":"_ChunkEmitMeta is frozen; events consumed as frozen values"}
+{"rule":"R41","file":"langextract/core/events.py","status":"PASS","line":null,"note":"ChunkStarted/ChunkFinished/ParseFailed are frozen=True"}
+{"rule":"R41","file":"langextract/core/types.py","status":"PASS","line":null,"note":"TokenUsage and ScoredOutput are frozen; usage field optional"}
+{"rule":"R41","file":"langextract/extraction.py","status":"PASS","line":null,"note":"no new value objects defined here"}
+{"rule":"R41","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"returns frozen TokenUsage"}
+{"rule":"R41","file":"tests/chunk_events_test.py","status":"PASS","line":null,"note":"tests consume frozen events/TokenUsage"}
+{"rule":"R41","file":"tests/inference_test.py","status":"PASS","line":null,"note":"tests consume frozen TokenUsage"}
+{"rule":"R47","file":"langextract/annotation.py","status":"PASS","line":null,"note":"chunk.char_interval.start_pos is data navigation; dispatcher.emit is one hop"}
+{"rule":"R47","file":"langextract/core/events.py","status":"PASS","line":null,"note":"no collaborator chains"}
+{"rule":"R47","file":"langextract/core/types.py","status":"PASS","line":null,"note":"no collaborator chains"}
+{"rule":"R47","file":"langextract/extraction.py","status":"PASS","line":null,"note":"annotator.annotate_* then on_event kwarg; no deep chains"}
+{"rule":"R47","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"response.get keys are data access, not behavioral chains"}
+{"rule":"R47","file":"tests/chunk_events_test.py","status":"PASS","line":null,"note":"no message chains"}
+{"rule":"R47","file":"tests/inference_test.py","status":"PASS","line":null,"note":"results[0][0].usage is data indexing"}
+{"rule":"R48","file":"langextract/annotation.py","status":"PASS","line":null,"note":"no temporary instance fields for event plumbing; meta passed as locals"}
+{"rule":"R48","file":"langextract/core/events.py","status":"PASS","line":null,"note":"_logged_failure is run-lifetime state set in __init__, not a cross-method temp"}
+{"rule":"R48","file":"langextract/core/types.py","status":"PASS","line":null,"note":"optional fields are value meaning (usage None); not temps"}
+{"rule":"R48","file":"langextract/extraction.py","status":"PASS","line":null,"note":"no instance temporary fields"}
+{"rule":"R48","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"no new temporary fields"}
+{"rule":"R48","file":"tests/chunk_events_test.py","status":"PASS","line":null,"note":"observer.events is intentional accumulator"}
+{"rule":"R48","file":"tests/inference_test.py","status":"PASS","line":null,"note":"no temporary fields"}
+{"rule":"R54","file":"langextract/annotation.py","status":"PASS","line":null,"note":"on_event is keyword-only after *; no new positional bool switches"}
+{"rule":"R54","file":"langextract/core/events.py","status":"PASS","line":null,"note":"no bool flag parameters on new APIs"}
+{"rule":"R54","file":"langextract/core/types.py","status":"PASS","line":null,"note":"no flag arguments"}
+{"rule":"R54","file":"langextract/extraction.py","status":"PASS","line":null,"note":"on_event is keyword-only; pre-existing bools unchanged"}
+{"rule":"R54","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"no new flag arguments in _usage_from_response"}
+{"rule":"R54","file":"tests/chunk_events_test.py","status":"PASS","line":null,"note":"tests pass keyword bools (show_progress/debug)"}
+{"rule":"R54","file":"tests/inference_test.py","status":"PASS","line":null,"note":"no new flag arguments"}
+{"rule":"R55","file":"langextract/annotation.py","status":"PASS","line":null,"note":"long Annotator signatures pre-existing; new on_event/dispatcher/pass_index are keyword with defaults"}
+{"rule":"R55","file":"langextract/core/events.py","status":"PASS","line":null,"note":"Dispatcher and emit take few parameters"}
+{"rule":"R55","file":"langextract/core/types.py","status":"PASS","line":null,"note":"dataclass constructors; do not flag"}
+{"rule":"R55","file":"langextract/extraction.py","status":"PASS","line":null,"note":"extract is documented public entry point; on_event keyword-only addition"}
+{"rule":"R55","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"_usage_from_response takes one Mapping parameter"}
+{"rule":"R55","file":"tests/chunk_events_test.py","status":"PASS","line":null,"note":"test helpers have short signatures"}
+{"rule":"R55","file":"tests/inference_test.py","status":"PASS","line":null,"note":"no long new signatures"}
+{"rule": "R01", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "new helpers and on_event/dispatcher params are fully annotated"}
+{"rule": "R01", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "Dispatcher methods and event fields annotated; X|None with future annotations"}
+{"rule": "R01", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "TokenUsage fields annotated"}
+{"rule": "R01", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "on_event parameter annotated"}
+{"rule": "R01", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "_usage_from_response and nested helper annotated"}
+{"rule": "R01", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "new observer/fakes annotate event callbacks; infer fakes match BaseLanguageModel style"}
+{"rule": "R01", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "new tests need no new function signatures"}
+{"rule": "R02", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "public annotate_* docstrings document on_event; private helpers have brief summaries"}
+{"rule": "R02", "file": "langextract/core/events.py", "status": "FIXED", "line": 103, "note": "added docstring on public Dispatcher.emit"}
+{"rule": "R02", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "TokenUsage has a summary docstring"}
+{"rule": "R02", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "extract Args documents on_event"}
+{"rule": "R02", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "_usage_from_response has a summary docstring"}
+{"rule": "R02", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "test class/helpers have summaries; private fakes do not need full Args blocks"}
+{"rule": "R02", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "new usage tests have docstrings"}
+{"rule": "R08", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "no hardcoded URLs/thresholds; outcome strings are event-contract constants"}
+{"rule": "R08", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "OUTCOME_* are domain vocabulary not deployment config"}
+{"rule": "R08", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "no hardcoded config values"}
+{"rule": "R08", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "no new config literals"}
+{"rule": "R08", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "_NANOSECONDS_PER_SECOND is a unit conversion, not deploy config"}
+{"rule": "R08", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "test buffer size is a fixture constant"}
+{"rule": "R08", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "mock response values are fixtures"}
+{"rule": "R09", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "has from __future__ import annotations"}
+{"rule": "R09", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "has from __future__ import annotations"}
+{"rule": "R09", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "has from __future__ import annotations"}
+{"rule": "R09", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "has from __future__ import annotations"}
+{"rule": "R09", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "has from __future__ import annotations"}
+{"rule": "R09", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "has from __future__ import annotations"}
+{"rule": "R09", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "has from __future__ import annotations"}
+{"rule": "R14", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "no filesystem path construction in new emit path"}
+{"rule": "R14", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "no paths"}
+{"rule": "R14", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "no paths"}
+{"rule": "R14", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "no paths in on_event wiring"}
+{"rule": "R14", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "new usage helper does not construct filesystem paths"}
+{"rule": "R14", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "no path construction"}
+{"rule": "R14", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "no path construction in new tests"}
+{"rule": "R25", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "new helpers use descriptive names (meta, error, usage, pass_index)"}
+{"rule": "R25", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "exc is 3 chars and standard; event/on_event descriptive"}
+{"rule": "R25", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "field names are descriptive"}
+{"rule": "R25", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "on_event is descriptive"}
+{"rule": "R25", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "key/value/latency_ns names are descriptive"}
+{"rule": "R25", "file": "tests/chunk_events_test.py", "status": "FIXED", "line": 217, "note": "renamed short locals e/s/f/r/d to event/started_event/finished_event/record/document"}
+{"rule": "R25", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "new tests use descriptive names (usage, model, results)"}
+{"rule": "R32", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "imports modules (events, types, chunking); typing/collections.abc name imports allowed"}
+{"rule": "R32", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "imports langextract.core.types as module; Callable/ClassVar from typing/abc allowed"}
+{"rule": "R32", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "typing/collections.abc name imports allowed"}
+{"rule": "R32", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "events imported as module"}
+{"rule": "R32", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "core_types module alias; typing name imports allowed; new code follows file style"}
+{"rule": "R32", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "NamedTuple from typing allowed; langextract modules imported as modules"}
+{"rule": "R32", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "follows existing import style of the file"}
+{"rule": "R43", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "no plan/phase/ticket IDs in new comments/docstrings"}
+{"rule": "R43", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "no process metadata"}
+{"rule": "R43", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "no process metadata"}
+{"rule": "R43", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "pre-existing TODO(v2.0.0) is repo-style; no new process IDs"}
+{"rule": "R43", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "no process metadata in new usage helper"}
+{"rule": "R43", "file": "tests/chunk_events_test.py", "status": "FIXED", "line": 15, "note": "removed RED/GREEN process phrasing from module docstring"}
+{"rule": "R43", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "no process metadata in new tests"}
+{"rule": "R44", "file": "langextract/annotation.py", "status": "FIXED", "line": 665, "note": "renamed sequential-pass loop pass_num to pass_index to match event field vocabulary"}
+{"rule": "R44", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "event field names consistent across ChunkStarted/Finished/ParseFailed"}
+{"rule": "R44", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "TokenUsage field names used consistently"}
+{"rule": "R44", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "on_event name matches annotator API"}
+{"rule": "R44", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "TokenUsage field names match types.TokenUsage"}
+{"rule": "R44", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "observer is the test double for on_event; chunk/event vocabulary matches production"}
+{"rule": "R44", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "usage/token field names match TokenUsage"}
+{"rule": "R05", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "chunk emit packing uses _ChunkEmitMeta; no cross-file duplicate logic beyond event field clump already under contracts R39"}
+{"rule": "R05", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "event types and Dispatcher are unique to this module"}
+{"rule": "R05", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "TokenUsage is the shared value type; no duplicated mapping logic here"}
+{"rule": "R05", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "on_event is forwarded only; no duplicated transform"}
+{"rule": "R05", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "_usage_from_response is the single Ollama->TokenUsage mapper"}
+{"rule": "R05", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "oracle and fakes are test-local; no production duplicate"}
+{"rule": "R05", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "usage assertions unique to Ollama infer tests"}
+{"rule": "R07", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "no unused imports or dead branches in new emit path; make_dispatcher already removed"}
+{"rule": "R07", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "all exports used; no dead code"}
+{"rule": "R07", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "TokenUsage fields are part of the public value type"}
+{"rule": "R07", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "events import and on_event wiring are live"}
+{"rule": "R07", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "_usage_from_response and _NANOSECONDS_PER_SECOND are used"}
+{"rule": "R07", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "helpers and fakes are referenced by tests"}
+{"rule": "R07", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "new usage tests are live; no commented-out blocks"}
+{"rule": "R27", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "_ChunkEmitMeta already names document_id/chunk_index/char_start/char_end"}
+{"rule": "R27", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "event dataclasses use named fields throughout"}
+{"rule": "R27", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "TokenUsage/ScoredOutput use named fields"}
+{"rule": "R27", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "no positional record tuples in new code"}
+{"rule": "R27", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "TokenUsage constructed with named fields"}
+{"rule": "R27", "file": "tests/chunk_events_test.py", "status": "FIXED", "line": 46, "note": "replaced oracle 4-tuples and index access with _ExpectedChunk NamedTuple"}
+{"rule": "R27", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "usage asserted via named attributes"}
+{"rule": "R28", "file": "langextract/annotation.py", "status": "FIXED", "line": 533, "note": "materialize align() to list; num_extractions=len(aligned_extractions) instead of parallel counter"}
+{"rule": "R28", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "Dispatcher._logged_failure is independent control state, not a derived aggregate"}
+{"rule": "R28", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "value types hold source fields only"}
+{"rule": "R28", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "no parallel derived state in on_event wiring"}
+{"rule": "R28", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "TokenUsage fields mapped once from response"}
+{"rule": "R28", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "observer lists are the source of truth for assertions"}
+{"rule": "R28", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "no parallel derived counters in new tests"}
+{"rule": "R29", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "active vs inactive resolve paths differ (ParseFailed emit); ChunkFinished constructors differ by outcome fields"}
+{"rule": "R29", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "no parallel loops/branches in Dispatcher"}
+{"rule": "R29", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "no loops/branches in new types"}
+{"rule": "R29", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "on_event forwarded in two call sites with distinct return shapes (single vs list)"}
+{"rule": "R29", "file": "langextract/providers/ollama.py", "status": "FIXED", "line": 331, "note": "collapsed _optional_int/_optional_latency_s into one _optional_number helper"}
+{"rule": "R29", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "repeated annotate_documents setup differs by scenario; leave for test-style rules"}
+{"rule": "R29", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "three usage tests share shape but assert distinct paths; prefer PASS over merging across generate/chat/missing"}
+{"rule": "R38", "file": "langextract/annotation.py", "status": "FIXED", "line": 501, "note": "outcome uses events.OUTCOME_OK / OUTCOME_PARSE_ERROR instead of string literals"}
+{"rule": "R38", "file": "langextract/core/events.py", "status": "FIXED", "line": 38, "note": "defined OUTCOME_OK and OUTCOME_PARSE_ERROR as single-source constants"}
+{"rule": "R38", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "no new magic literals"}
+{"rule": "R38", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "no new tunables"}
+{"rule": "R38", "file": "langextract/providers/ollama.py", "status": "FIXED", "line": 110, "note": "named _NANOSECONDS_PER_SECOND for total_duration conversion"}
+{"rule": "R38", "file": "tests/chunk_events_test.py", "status": "FIXED", "line": 312, "note": "assertions use events.OUTCOME_OK / OUTCOME_PARSE_ERROR"}
+{"rule": "R38", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "fixture numbers mirror mock response payloads, not duplicated tunables"}
+{"rule": "R49", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "no module-level mutable state; dispatcher is local"}
+{"rule": "R49", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "OUTCOME_* are immutable constants; Dispatcher holds instance state"}
+{"rule": "R49", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "no module globals mutated"}
+{"rule": "R49", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "no new globals"}
+{"rule": "R49", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "_NANOSECONDS_PER_SECOND is immutable; no runtime mutation"}
+{"rule": "R49", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "module constants are immutable test fixtures"}
+{"rule": "R49", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "no new module mutable state"}
+{"rule": "R50", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "new params default to None; no mutable defaults"}
+{"rule": "R50", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "no mutable default arguments"}
+{"rule": "R50", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "usage field uses default=None"}
+{"rule": "R50", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "on_event defaults to None"}
+{"rule": "R50", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "no mutable defaults in new helpers"}
+{"rule": "R50", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "fake __init__ defaults are immutable strings/None"}
+{"rule": "R50", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "no mutable defaults in new tests"}
+{"rule": "R58", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "char_interval None checks use truthiness of interval object; document_id or \"\" treats empty and missing alike"}
+{"rule": "R58", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "active uses is not None; no falsy-valid confusion"}
+{"rule": "R58", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "no None/falsy checks in new types"}
+{"rule": "R58", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "no new None checks"}
+{"rule": "R58", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "_optional_number uses isinstance; explicit is None for token casts; pre-existing if output: left alone"}
+{"rule": "R58", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "char_start/char_end checked with is not None"}
+{"rule": "R58", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "assertIsNone/assertIsNotNone used for usage fields"}
+{"rule":"R16","file":"langextract/annotation.py","status":"PASS","line":null,"note":"on_event and Dispatcher are injected collaborators, not config field fan-out"}
+{"rule":"R16","file":"langextract/core/events.py","status":"PASS","line":null,"note":"Dispatcher takes a single callback; event dataclasses hold values only"}
+{"rule":"R16","file":"langextract/core/types.py","status":"PASS","line":null,"note":"TokenUsage/ScoredOutput are value types with no config fan-out"}
+{"rule":"R16","file":"langextract/extraction.py","status":"PASS","line":null,"note":"on_event is a single optional callback; no config field fan-out added"}
+{"rule":"R16","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"_usage_from_response maps response fields; no config fan-out"}
+{"rule":"R16","file":"tests/chunk_events_test.py","status":"PASS","line":null,"note":"test helpers construct fakes; no config fan-out"}
+{"rule":"R16","file":"tests/inference_test.py","status":"PASS","line":null,"note":"usage tests mock provider queries; no config fan-out"}
+{"rule":"R24","file":"langextract/annotation.py","status":"PASS","line":null,"note":"Annotator size/cohesion is pre-existing; this change only wires on_event emission"}
+{"rule":"R24","file":"langextract/core/events.py","status":"PASS","line":null,"note":"Dispatcher is a small cohesive observer wrapper; event types are value objects"}
+{"rule":"R24","file":"langextract/core/types.py","status":"PASS","line":null,"note":"dataclasses/value objects only; do not flag"}
+{"rule":"R24","file":"langextract/extraction.py","status":"PASS","line":null,"note":"module-level extract(); no class to evaluate"}
+{"rule":"R24","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"thin provider wrapper translating SDK requests/responses; do not flag"}
+{"rule":"R24","file":"tests/chunk_events_test.py","status":"PASS","line":null,"note":"test classes excluded from R24"}
+{"rule":"R24","file":"tests/inference_test.py","status":"PASS","line":null,"note":"test classes excluded from R24"}
+{"rule":"R26","file":"langextract/annotation.py","status":"PASS","line":null,"note":"no new classes/modules; only on_event plumbing into existing Annotator"}
+{"rule":"R26","file":"langextract/core/events.py","status":"PASS","line":null,"note":"events.py + Dispatcher + event dataclasses named by plan/spec"}
+{"rule":"R26","file":"langextract/core/types.py","status":"PASS","line":null,"note":"TokenUsage required by plan as shared value type for ScoredOutput and ChunkFinished"}
+{"rule":"R26","file":"langextract/extraction.py","status":"PASS","line":null,"note":"only forwards new on_event kwarg; no new abstractions"}
+{"rule":"R26","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"_usage_from_response is a private static helper required by plan"}
+{"rule":"R26","file":"tests/chunk_events_test.py","status":"PASS","line":null,"note":"test helpers/fixtures; do not flag"}
+{"rule":"R26","file":"tests/inference_test.py","status":"PASS","line":null,"note":"new tests only; do not flag"}
+{"rule":"R31","file":"langextract/annotation.py","status":"PASS","line":null,"note":"Annotator has real instance state; not a namespace class"}
+{"rule":"R31","file":"langextract/core/events.py","status":"PASS","line":null,"note":"Dispatcher has instance state; event dataclasses hold fields"}
+{"rule":"R31","file":"langextract/core/types.py","status":"PASS","line":null,"note":"value dataclasses/enums only"}
+{"rule":"R31","file":"langextract/extraction.py","status":"NA","line":null,"note":"no classes in this module"}
+{"rule":"R31","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"OllamaLanguageModel has instance state"}
+{"rule":"R31","file":"tests/chunk_events_test.py","status":"PASS","line":null,"note":"test/helper classes have instance state or are TestCase"}
+{"rule":"R31","file":"tests/inference_test.py","status":"PASS","line":null,"note":"TestCase subclasses; not namespace classes"}
+{"rule":"R37","file":"langextract/annotation.py","status":"PASS","line":null,"note":"call sites now construct Dispatcher directly; annotate_text does more than forward"}
+{"rule":"R37","file":"langextract/core/events.py","status":"FIXED","line":113,"note":"removed make_dispatcher pass-through; callers use Dispatcher(on_event)"}
+{"rule":"R37","file":"langextract/core/types.py","status":"PASS","line":null,"note":"no pass-through wrappers"}
+{"rule":"R37","file":"langextract/extraction.py","status":"PASS","line":null,"note":"extract forwards on_event as part of larger orchestration, not a sole pass-through"}
+{"rule":"R37","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"_usage_from_response maps fields; not a pass-through"}
+{"rule":"R37","file":"tests/chunk_events_test.py","status":"PASS","line":null,"note":"no middle-man wrappers"}
+{"rule":"R37","file":"tests/inference_test.py","status":"PASS","line":null,"note":"no middle-man wrappers"}
+{"rule":"R42","file":"langextract/annotation.py","status":"NA","line":null,"note":"single module file, not a package"}
+{"rule":"R42","file":"langextract/core/events.py","status":"PASS","line":null,"note":"new module in multi-module core package; not a lone-module package"}
+{"rule":"R42","file":"langextract/core/types.py","status":"PASS","line":null,"note":"existing sibling in multi-module core package"}
+{"rule":"R42","file":"langextract/extraction.py","status":"NA","line":null,"note":"single module file, not a package"}
+{"rule":"R42","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"providers package has multiple modules"}
+{"rule":"R42","file":"tests/chunk_events_test.py","status":"NA","line":null,"note":"test module, not a package layout"}
+{"rule":"R42","file":"tests/inference_test.py","status":"NA","line":null,"note":"test module, not a package layout"}
+{"rule":"R45","file":"langextract/annotation.py","status":"PASS","line":null,"note":"event construction from chunk fields is adapter/DTO assembly, not envy"}
+{"rule":"R45","file":"langextract/core/events.py","status":"PASS","line":null,"note":"Dispatcher only uses its own callback state"}
+{"rule":"R45","file":"langextract/core/types.py","status":"PASS","line":null,"note":"value objects; no envious methods"}
+{"rule":"R45","file":"langextract/extraction.py","status":"PASS","line":null,"note":"on_event plumbing only; no reach-into-other-object compute"}
+{"rule":"R45","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"_usage_from_response is a provider adapter mapping SDK response fields"}
+{"rule":"R45","file":"tests/chunk_events_test.py","status":"PASS","line":null,"note":"tests assert on event fields by design"}
+{"rule":"R45","file":"tests/inference_test.py","status":"PASS","line":null,"note":"tests assert on usage fields by design"}
+{"rule":"R46","file":"langextract/annotation.py","status":"PASS","line":null,"note":"on_event wiring is single-feature plumbing + tests; expected touch points"}
+{"rule":"R46","file":"langextract/core/events.py","status":"PASS","line":null,"note":"three event types specified by plan; not parallel sync tables"}
+{"rule":"R46","file":"langextract/core/types.py","status":"PASS","line":null,"note":"TokenUsage defined once and reused"}
+{"rule":"R46","file":"langextract/extraction.py","status":"PASS","line":null,"note":"single on_event forward into Annotator"}
+{"rule":"R46","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"usage mapping lives in one helper"}
+{"rule":"R46","file":"tests/chunk_events_test.py","status":"PASS","line":null,"note":"acceptance tests for the feature; expected companion edits"}
+{"rule":"R46","file":"tests/inference_test.py","status":"PASS","line":null,"note":"provider usage tests; expected companion edits"}
+{"rule":"R61","file":"langextract/annotation.py","status":"PASS","line":null,"note":"getattr(scored_outputs[0], 'usage', None) is optional-attr access, not computed dispatch"}
+{"rule":"R61","file":"langextract/core/events.py","status":"PASS","line":null,"note":"getattr(event, 'name', ...) fallback is not computed-name dispatch"}
+{"rule":"R61","file":"langextract/core/types.py","status":"PASS","line":null,"note":"no runtime magic"}
+{"rule":"R61","file":"langextract/extraction.py","status":"PASS","line":null,"note":"no runtime magic added"}
+{"rule":"R61","file":"langextract/providers/ollama.py","status":"PASS","line":null,"note":"_usage_from_response uses explicit keys; existing **kwargs SDK forward unchanged"}
+{"rule":"R61","file":"tests/chunk_events_test.py","status":"PASS","line":null,"note":"no production magic"}
+{"rule":"R61","file":"tests/inference_test.py","status":"PASS","line":null,"note":"mocks only; no production magic"}
+{"rule": "R06", "file": "langextract/annotation.py", "status": "FIXED", "line": 462, "note": "Replaced defensive getattr(scored_outputs[0], 'usage', None) with scored_outputs[0].usage; ScoredOutput always defines usage."}
+{"rule": "R06", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "No internal defensive validation; observer None-check is dispatch contract."}
+{"rule": "R06", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "Value types only; no defensive checks."}
+{"rule": "R06", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "on_event forwarded; no new defensive guards."}
+{"rule": "R06", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "_usage_from_response type-checks are boundary validation of external Ollama JSON — appropriate."}
+{"rule": "R06", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "Test code; no production defensive checks added."}
+{"rule": "R06", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "Test code; mocks only."}
+{"rule": "R12", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "No secrets logged; parse warning logs exception text already used for suppress_parse_errors path."}
+{"rule": "R12", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "Observer failure log includes event name + exc; no tokens/PII/API keys."}
+{"rule": "R12", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "No I/O or logging."}
+{"rule": "R12", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "No new logging of sensitive data."}
+{"rule": "R12", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "Usage mapping does not log response bodies or credentials."}
+{"rule": "R12", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "No secrets in fixtures."}
+{"rule": "R12", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "Mock URLs only; no real credentials."}
+{"rule": "R30", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "chunk_meta built 1:1 with batch before zip; pass_index/batch_index set by callers. Pre-existing zip(batch, outputs) length assumption unchanged."}
+{"rule": "R30", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "Dispatcher documents soft-fail contract; outcome left as str per spec stable string values."}
+{"rule": "R30", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "Optional TokenUsage fields are intentionally unconstrained."}
+{"rule": "R30", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "on_event optional with documented soft-fail via Dispatcher."}
+{"rule": "R30", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "Missing/invalid usage keys become None; no silent wrong assumption."}
+{"rule": "R30", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "Tests encode expected contracts rather than production preconditions."}
+{"rule": "R30", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "N/A beyond asserting mapped Nones."}
+{"rule": "R51", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "No new open/socket/pool without context managers."}
+{"rule": "R51", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "No resources to manage."}
+{"rule": "R51", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "No resources."}
+{"rule": "R51", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "No resources."}
+{"rule": "R51", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "No new resource acquisition in usage helper."}
+{"rule": "R51", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "ThreadedFakeModel uses with ThreadPoolExecutor."}
+{"rule": "R51", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "Mocks only."}
+{"rule": "R52", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "ResolverParsingError path re-raises with bare raise (keeps context); InferenceOutputError unchanged. Broad observer catch is R15, not redesigned here."}
+{"rule": "R52", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "except Exception soft-path is intentional R15 observer isolation; no raise Exception / lost cause in new raises."}
+{"rule": "R52", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "No exceptions raised."}
+{"rule": "R52", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "No new exception sites."}
+{"rule": "R52", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "Existing InferenceRuntimeError ... from e unchanged; usage helper raises nothing."}
+{"rule": "R52", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "assertRaises(ResolverParsingError) is precise."}
+{"rule": "R52", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "No exception-path changes in new tests."}
+{"rule": "R53", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "Uses absl logging with lazy % args; no print."}
+{"rule": "R53", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "stdlib logging.warning with lazy args; follows this new module's logger choice; no print/basicConfig."}
+{"rule": "R53", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "No logging."}
+{"rule": "R53", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "No new logging/print."}
+{"rule": "R53", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "No new print/logging in usage path."}
+{"rule": "R53", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "assertLogs probe is test harness, not library print."}
+{"rule": "R53", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "No print in new tests."}
+{"rule": "R59", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "Import defines classes/helpers only."}
+{"rule": "R59", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "Import defines types/Dispatcher only."}
+{"rule": "R59", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "Import defines types only."}
+{"rule": "R59", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "No import-time side effects added."}
+{"rule": "R59", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "No import-time side effects added."}
+{"rule": "R59", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "Module-level constants only; main guarded."}
+{"rule": "R59", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "No import-time side effects in new code."}
+{"rule": "R15", "file": "langextract/core/events.py", "status": "REPORTED", "line": 101, "note": "R15-PENDING: swallows Exception from user on_event; blast radius: observer failure logged once then ignored for rest of run (AC6 locked); suggested: keep (intentional soft path) or narrow to Exception subclasses only"}
+{"rule": "R15", "file": "langextract/annotation.py", "status": "REPORTED", "line": 458, "note": "R15-PENDING: catch ResolverParsingError then log+continue when suppress_parse_errors; blast radius: chunk omitted from results (same as prior suppress path); suggested: keep (matches resolver suppress contract)"}
+{"rule": "R15", "file": "langextract/annotation.py", "status": "PASS", "line": 406, "note": "AttributeError on progress-bar set_description is narrow and proceeds; pre-existing progress UX"}
+{"rule": "R15", "file": "langextract/providers/ollama.py", "status": "PASS", "line": 319, "note": "except Exception re-raises as InferenceRuntimeError with from e; not a swallow"}
+{"rule": "R15", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "no swallowed-exception candidates in on_event plumbing"}
+{"rule": "R15", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "no try/except"}
+{"rule": "R15", "file": "tests/chunk_events_test.py", "status": "NA", "line": null, "note": "test code; assertRaises sites only"}
+{"rule": "R15", "file": "tests/inference_test.py", "status": "NA", "line": null, "note": "test code"}
+{"rule": "R03", "file": "langextract/annotation.py", "status": "FIXED", "line": 59, "note": "extracted _next_chunk_emit_meta, _emit_parse_failed_chunk, _resolve_chunk_extractions from single-pass emit/resolve pipeline"}
+{"rule": "R03", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "Dispatcher.emit is a short single-step method"}
+{"rule": "R03", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "TokenUsage/ScoredOutput are value types without multi-step bodies"}
+{"rule": "R03", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "on_event is forwarded; no new multi-step pipeline in this file"}
+{"rule": "R03", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "_usage_from_response is a short mapping helper"}
+{"rule": "R03", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "test methods are scenario-sized; shared setup already in helpers/fakes"}
+{"rule": "R03", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "new usage tests are short arrange/act/assert"}
+{"rule": "R10", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "del prompts comment explains WHY (retain memory); no noise what-comments in new helpers"}
+{"rule": "R10", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "no noise comments"}
+{"rule": "R10", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "no noise comments"}
+{"rule": "R10", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "no noise comments in on_event wiring"}
+{"rule": "R10", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "no noise comments in usage mapping"}
+{"rule": "R10", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "counterexample/ordering comments explain WHY; not restatements"}
+{"rule": "R10", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "docstrings describe mapping intent; no noise inline comments"}
+{"rule": "R11", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "public annotate_documents/annotate_text orchestrate; emit/resolve work lives in private helpers"}
+{"rule": "R11", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "Dispatcher public surface is thin emit/active"}
+{"rule": "R11", "file": "langextract/core/types.py", "status": "NA", "line": null, "note": "no behavioral public methods added"}
+{"rule": "R11", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "extract remains orchestration; on_event forwarded to annotator"}
+{"rule": "R11", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "usage mapping isolated in private static helper"}
+{"rule": "R11", "file": "tests/chunk_events_test.py", "status": "NA", "line": null, "note": "test module; R11 targets production public methods"}
+{"rule": "R11", "file": "tests/inference_test.py", "status": "NA", "line": null, "note": "test module; R11 targets production public methods"}
+{"rule": "R33", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "dispatcher=None sentinel creates a fresh Dispatcher per call; instance default would be shared"}
+{"rule": "R33", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "on_event=None means absent observer, not a cheap immutable default"}
+{"rule": "R33", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "TokenUsage None fields mean absent counts"}
+{"rule": "R33", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "on_event=None means disabled callback"}
+{"rule": "R33", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "no None-then-default pattern in new usage helper"}
+{"rule": "R33", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "fake defaults are real immutable values (_EMPTY_YAML) or meaningful None usage"}
+{"rule": "R33", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "no None sentinel defaults in new tests"}
+{"rule": "R34", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "empty-batch continue and parse-error continue change control flow; not redundant with the general path"}
+{"rule": "R34", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "early return when on_event is None avoids call; not redundant"}
+{"rule": "R34", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "no redundant branches"}
+{"rule": "R34", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "no new redundant special cases"}
+{"rule": "R34", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "bool rejection in _optional_number is required (bool is int subclass)"}
+{"rule": "R34", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "no redundant guards in new oracle/assertions"}
+{"rule": "R34", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "no redundant special cases in new tests"}
+{"rule": "R35", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "parse error_type selection lives in named _emit_parse_failed_chunk helper"}
+{"rule": "R35", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "no comment-decoded expressions"}
+{"rule": "R35", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "no comment-decoded expressions"}
+{"rule": "R35", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "no comment-decoded expressions"}
+{"rule": "R35", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "_optional_number names the validation; latency scale uses named constant"}
+{"rule": "R35", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "_ExpectedChunk names oracle fields formerly explained by tuple comments"}
+{"rule": "R35", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "no comment-decoded expressions in new tests"}
+{"rule": "R56", "file": "langextract/annotation.py", "status": "FIXED", "line": 119, "note": "moved resolve/parse-failed nesting into _resolve_chunk_extractions; loop body stays <=3 nest levels for new emit path"}
+{"rule": "R56", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "emit nesting is if + try (2 levels)"}
+{"rule": "R56", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "no nested control flow"}
+{"rule": "R56", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "no new nesting"}
+{"rule": "R56", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "_usage_from_response nesting is shallow"}
+{"rule": "R56", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "test nesting within limits"}
+{"rule": "R56", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "new tests are shallow"}
+{"rule": "R57", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "_resolve_chunk_extractions returns Sequence|None explicitly on all paths; generators yield consistently"}
+{"rule": "R57", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "emit returns None on all paths"}
+{"rule": "R57", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "__str__ always returns str"}
+{"rule": "R57", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "extract return kinds unchanged"}
+{"rule": "R57", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "_usage_from_response always returns TokenUsage; _optional_number returns float|None explicitly"}
+{"rule": "R57", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "helpers return consistently"}
+{"rule": "R57", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "test methods return None consistently"}
+{"rule": "R60", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "New _ChunkEmitMeta is private; module historically has no __all__ (pre-existing)."}
+{"rule": "R60", "file": "langextract/core/events.py", "status": "FIXED", "line": 26, "note": "Removed internal Dispatcher from __all__; public surface is event types + EventCallback only."}
+{"rule": "R60", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "TokenUsage correctly added to existing __all__."}
+{"rule": "R60", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "No new helpers; module historically has no __all__ (pre-existing)."}
+{"rule": "R60", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "New _usage_from_response is private; no __all__ change needed."}
+{"rule": "R60", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "Test helpers and fakes are underscore-prefixed."}
+{"rule": "R60", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "No new public helpers; tests stay private to the module."}
+{"rule": "R62", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "New types (_ChunkEmitMeta) at top; no reordering of existing methods."}
+{"rule": "R62", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "New module: event types then Dispatcher; top-down."}
+{"rule": "R62", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "TokenUsage placed with sibling value types before ScoredOutput consumer."}
+{"rule": "R62", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "Only added on_event param/forwarding; no new helpers to order."}
+{"rule": "R62", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "_usage_from_response placed next to sibling response helpers."}
+{"rule": "R62", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "Helpers then test class; matches new-module top-down."}
+{"rule": "R62", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "New tests appended near existing Ollama infer tests; no scatter."}
+{"rule": "R63", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "on_event keyword-only on annotate_documents/annotate_text; dispatcher/pass_index consistent on private pass helpers."}
+{"rule": "R63", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "ChunkStarted/ChunkFinished/ParseFailed share document_id,chunk_index,char_*,pass_index,batch_index order."}
+{"rule": "R63", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "TokenUsage field names align with ChunkFinished.usage consumer."}
+{"rule": "R63", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "on_event forwarded with same name to annotate_text/annotate_documents."}
+{"rule": "R63", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "_usage_from_response mirrors sibling _extract_*_response_text(response) signature shape."}
+{"rule": "R63", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "Fake model.infer(batch_prompts, **kwargs) signatures stay consistent."}
+{"rule": "R63", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "New usage tests follow existing OllamaLanguageModel construction patterns."}
+{"rule": "R64", "file": "langextract/annotation.py", "status": "PASS", "line": null, "note": "New multi-line event emits and _ChunkEmitMeta calls use trailing commas."}
+{"rule": "R64", "file": "langextract/core/events.py", "status": "PASS", "line": null, "note": "__all__ last item has trailing comma; dataclass fields one-per-line."}
+{"rule": "R64", "file": "langextract/core/types.py", "status": "PASS", "line": null, "note": "TokenUsage fields one-per-line; __all__ layout matches pre-existing file convention."}
+{"rule": "R64", "file": "langextract/extraction.py", "status": "PASS", "line": null, "note": "on_event= kwarg additions keep trailing commas on call sites."}
+{"rule": "R64", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "ScoredOutput/TokenUsage multi-line calls have trailing commas."}
+{"rule": "R64", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "New multi-line calls/literals use trailing commas."}
+{"rule": "R64", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "New response dicts and model construction use trailing commas."}
+{"rule": "R65", "file": "langextract/annotation.py", "status": "REPORTED", "line": 1, "note": "d074017 (message: test RED) also landed annotate_documents on_event plumbing alongside tests/chunk_events_test.py. Split: move-only/test-only RED commit, then feat commit with annotation emission. Suggested: keep RED tests-only; put production stubs in the first feat commit."}
+{"rule": "R65", "file": "langextract/core/events.py", "status": "REPORTED", "line": 1, "note": "New module introduced in d074017 test(RED) commit together with full test suite and TokenUsage/extraction stubs. Suggested split: tests-only RED, then feat adding events.py."}
+{"rule": "R65", "file": "langextract/core/types.py", "status": "REPORTED", "line": 70, "note": "TokenUsage + ScoredOutput.usage added in the same RED test commit as tests. Suggested: TokenUsage in a dedicated feat commit after RED."}
+{"rule": "R65", "file": "langextract/extraction.py", "status": "REPORTED", "line": 76, "note": "on_event parameter wired in d074017 RED commit with tests. Suggested: leave extract() signature change to the feat commit that implements delivery."}
+{"rule": "R65", "file": "langextract/providers/ollama.py", "status": "PASS", "line": null, "note": "TokenUsage fill is in 0d79f88 feat-only commit; no move+edit mix."}
+{"rule": "R65", "file": "tests/chunk_events_test.py", "status": "REPORTED", "line": 1, "note": "Entire 712-line suite landed in d074017 alongside production stubs (events/types/annotation/extraction). Preferred: RED tests alone, then green commits without drive-by production in the test commit."}
+{"rule": "R65", "file": "tests/inference_test.py", "status": "REPORTED", "line": 164, "note": "New Ollama usage tests added in d074017 RED commit before provider fill (0d79f88). Acceptable as RED, but co-committed with unrelated events scaffolding in the same commit — prefer isolating inference RED with the TokenUsage type change only."}
+{"rule": "R17", "file": "langextract/annotation.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R17", "file": "langextract/core/events.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R17", "file": "langextract/core/types.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R17", "file": "langextract/extraction.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R17", "file": "langextract/providers/ollama.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R17", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "Shared setup in _make_annotator/_two_docs/_expected_chunk_tuples; no bare mkdtemp."}
+{"rule": "R17", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "New tests use mock.patch like siblings; no duplicated hand-rolled tempdirs."}
+{"rule": "R18", "file": "langextract/annotation.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R18", "file": "langextract/core/events.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R18", "file": "langextract/core/types.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R18", "file": "langextract/extraction.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R18", "file": "langextract/providers/ollama.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R18", "file": "tests/chunk_events_test.py", "status": "FIXED", "line": 680, "note": "Merged test_chunk_finished_carries_usage_* twins into parameterized test_chunk_finished_usage; ChunkEventsTest now parameterized.TestCase."}
+{"rule": "R18", "file": "tests/inference_test.py", "status": "REPORTED", "line": 164, "note": "test_ollama_infer_fills_token_usage and test_ollama_gpt_oss_chat_fills_token_usage share assertions but diverge on mock target/model_id/response shape. Suggested: parameterized.named_parameters with (patch_target, model_kwargs, response, prompt) or leave as intentional path-specific cases."}
+{"rule": "R19", "file": "langextract/annotation.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R19", "file": "langextract/core/events.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R19", "file": "langextract/core/types.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R19", "file": "langextract/extraction.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R19", "file": "langextract/providers/ollama.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R19", "file": "tests/chunk_events_test.py", "status": "REPORTED", "line": 267, "note": "test_pass_index_for_single_and_multi_pass packs single-pass and multi-pass checks. Suggested split: test_pass_index_single_pass_is_zero + test_pass_index_multi_pass_covers_0_and_1. Also test_extract_str_and_documents_deliver_events (line ~445) and test_without_on_event_parse_suppression_unchanged (~595) each cover two behaviors."}
+{"rule": "R19", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "New usage tests each assert one mapping behavior."}
+{"rule": "R20", "file": "langextract/annotation.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R20", "file": "langextract/core/events.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R20", "file": "langextract/core/types.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R20", "file": "langextract/extraction.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R20", "file": "langextract/providers/ollama.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R20", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "Uses fake BaseLanguageModel subclasses; no network/Ollama."}
+{"rule": "R20", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "New tests mock _ollama_query / _ollama_gpt_oss_chat_query at the provider boundary."}
+{"rule": "R21", "file": "langextract/annotation.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R21", "file": "langextract/core/events.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R21", "file": "langextract/core/types.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R21", "file": "langextract/extraction.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R21", "file": "langextract/providers/ollama.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R21", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "No external resources; markers not required."}
+{"rule": "R21", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "Mocks only; no live_api/integration needed."}
+{"rule": "R22", "file": "langextract/annotation.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R22", "file": "langextract/core/events.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R22", "file": "langextract/core/types.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R22", "file": "langextract/extraction.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R22", "file": "langextract/providers/ollama.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R22", "file": "tests/chunk_events_test.py", "status": "FIXED", "line": 284, "note": "Replaced weak assertTrue(collection/str) with assertNotEmpty for started_one, finished lists, observer.events, failed.error_type/message; usage equality via assertEqual list."}
+{"rule": "R22", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "New tests assert concrete token counts and latency; assertIsNotNone(usage) followed by field equality is precise enough."}
+{"rule": "R23", "file": "langextract/annotation.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R23", "file": "langextract/core/events.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R23", "file": "langextract/core/types.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R23", "file": "langextract/extraction.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R23", "file": "langextract/providers/ollama.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
+{"rule": "R23", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "Stays absltest (+ parameterized); no pytest conversion."}
+{"rule": "R23", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "New tests stay in absltest.TestCase / mock.patch style of the file."}

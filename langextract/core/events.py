@@ -29,9 +29,10 @@ __all__ = [
     "ParseFailed",
     "ExtractionEvent",
     "EventCallback",
-    "Dispatcher",
-    "make_dispatcher",
 ]
+
+OUTCOME_OK = "ok"
+OUTCOME_PARSE_ERROR = "parse_error"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -96,6 +97,7 @@ class Dispatcher:
     return self._on_event is not None
 
   def emit(self, event: ExtractionEvent) -> None:
+    """Delivers event to on_event; logs only the first observer failure."""
     if self._on_event is None:
       return
     try:
@@ -108,8 +110,3 @@ class Dispatcher:
             exc,
         )
         self._logged_failure = True
-
-
-def make_dispatcher(on_event: EventCallback | None) -> Dispatcher:
-  """Returns a per-run dispatcher for the given observer."""
-  return Dispatcher(on_event)

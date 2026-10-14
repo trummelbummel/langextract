@@ -26,7 +26,8 @@ Usage example:
 from __future__ import annotations
 
 import collections
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Sequence
+import dataclasses
 import time
 from typing import DefaultDict
 
@@ -42,6 +43,127 @@ from langextract.core import events
 from langextract.core import exceptions
 from langextract.core import format_handler as fh
 from langextract.core import tokenizer as tokenizer_lib
+from langextract.core import types
+
+
+@dataclasses.dataclass(frozen=True)
+class _ChunkEmitMeta:
+  """Per-chunk identity fields carried across infer for event emission."""
+
+  document_id: str
+  chunk_index: int
+  char_start: int | None
+  char_end: int | None
+
+
+def _next_chunk_emit_meta(
+    chunk: chunking.TextChunk,
+    chunk_index_by_doc: dict[str, int],
+) -> _ChunkEmitMeta:
+  """Allocates the next per-document chunk_index and builds emit metadata."""
+  document_id = chunk.document_id or ""
+  chunk_index = chunk_index_by_doc[document_id]
+  chunk_index_by_doc[document_id] = chunk_index + 1
+  char_interval = chunk.char_interval
+  return _ChunkEmitMeta(
+      document_id=document_id,
+      chunk_index=chunk_index,
+      char_start=char_interval.start_pos if char_interval else None,
+      char_end=char_interval.end_pos if char_interval else None,
+  )
+
+
+def _emit_parse_failed_chunk(
+    dispatcher: events.Dispatcher,
+    meta: _ChunkEmitMeta,
+    *,
+    pass_index: int,
+    batch_index: int,
+    batch_start: float,
+    error: Exception,
+    usage: types.TokenUsage | None,
+) -> None:
+  """Emits ParseFailed then ChunkFinished(outcome=parse_error) for a chunk."""
+  cause = error.__cause__
+  error_type = (
+      type(cause).__name__ if cause is not None else type(error).__name__
+  )
+  dispatcher.emit(
+      events.ParseFailed(
+          document_id=meta.document_id,
+          chunk_index=meta.chunk_index,
+          char_start=meta.char_start,
+          char_end=meta.char_end,
+          pass_index=pass_index,
+          batch_index=batch_index,
+          error_type=error_type,
+          message=str(error),
+      )
+  )
+  dispatcher.emit(
+      events.ChunkFinished(
+          document_id=meta.document_id,
+          chunk_index=meta.chunk_index,
+          char_start=meta.char_start,
+          char_end=meta.char_end,
+          pass_index=pass_index,
+          batch_index=batch_index,
+          duration_s=time.perf_counter() - batch_start,
+          num_extractions=0,
+          outcome=events.OUTCOME_PARSE_ERROR,
+          usage=usage,
+      )
+  )
+
+
+def _resolve_chunk_extractions(
+    resolver: resolver_lib.AbstractResolver,
+    output_text: str | None,
+    *,
+    dispatcher: events.Dispatcher,
+    meta: _ChunkEmitMeta,
+    pass_index: int,
+    batch_index: int,
+    batch_start: float,
+    usage: types.TokenUsage | None,
+    debug: bool,
+    suppress_parse_errors: bool,
+    **kwargs,
+) -> Sequence[data.Extraction] | None:
+  """Resolves model output; returns None when a parse error was suppressed."""
+  if not dispatcher.active:
+    return resolver.resolve(
+        output_text,
+        debug=debug,
+        suppress_parse_errors=suppress_parse_errors,
+        **kwargs,
+    )
+  try:
+    return resolver.resolve(
+        output_text,
+        debug=debug,
+        suppress_parse_errors=False,
+        **kwargs,
+    )
+  except resolver_lib.ResolverParsingError as error:
+    _emit_parse_failed_chunk(
+        dispatcher,
+        meta,
+        pass_index=pass_index,
+        batch_index=batch_index,
+        batch_start=batch_start,
+        error=error,
+        usage=usage,
+    )
+    if suppress_parse_errors:
+      logging.warning(
+          "Chunk omitted from results (parse error): %s. Set"
+          " resolver_params={'suppress_parse_errors': False} to"
+          " raise instead.",
+          error,
+      )
+      return None
+    raise
 
 
 def _merge_non_overlapping_extractions(
@@ -262,7 +384,7 @@ class Annotator:
     if resolver is None:
       resolver = resolver_lib.Resolver(format_type=data.FormatType.YAML)
 
-    dispatcher = events.make_dispatcher(on_event)
+    dispatcher = events.Dispatcher(on_event)
 
     if extraction_passes == 1:
       yield from self._annotate_documents_single_pass(
@@ -318,7 +440,7 @@ class Annotator:
     context for coreference resolution across chunk boundaries.
     """
     if dispatcher is None:
-      dispatcher = events.make_dispatcher(None)
+      dispatcher = events.Dispatcher(None)
 
     doc_order: list[str] = []
     doc_text_by_id: dict[str, str] = {}
@@ -406,24 +528,16 @@ class Annotator:
           except AttributeError:
             pass
 
-        chunk_meta: list[tuple[str, int, int | None, int | None]] = []
+        chunk_meta: list[_ChunkEmitMeta] = []
         for chunk in batch:
-          document_id = chunk.document_id or ""
-          chunk_index = chunk_index_by_doc[document_id]
-          chunk_index_by_doc[document_id] = chunk_index + 1
-          char_start = (
-              chunk.char_interval.start_pos if chunk.char_interval else None
-          )
-          char_end = (
-              chunk.char_interval.end_pos if chunk.char_interval else None
-          )
-          chunk_meta.append((document_id, chunk_index, char_start, char_end))
+          meta = _next_chunk_emit_meta(chunk, chunk_index_by_doc)
+          chunk_meta.append(meta)
           dispatcher.emit(
               events.ChunkStarted(
-                  document_id=document_id,
-                  chunk_index=chunk_index,
-                  char_start=char_start,
-                  char_end=char_end,
+                  document_id=meta.document_id,
+                  chunk_index=meta.chunk_index,
+                  char_start=meta.char_start,
+                  char_end=meta.char_end,
                   pass_index=pass_index,
                   batch_index=batch_index,
               )
@@ -437,7 +551,6 @@ class Annotator:
         del prompts
 
         for text_chunk, scored_outputs, meta in zip(batch, outputs, chunk_meta):
-          document_id, chunk_index, char_start, char_end = meta
           if not isinstance(scored_outputs, list):
             scored_outputs = list(scored_outputs)
           if not scored_outputs:
@@ -445,65 +558,22 @@ class Annotator:
                 "No scored outputs from language model."
             )
 
-          usage = getattr(scored_outputs[0], "usage", None)
-
-          if dispatcher.active:
-            try:
-              resolved_extractions = resolver.resolve(
-                  scored_outputs[0].output,
-                  debug=debug,
-                  suppress_parse_errors=False,
-                  **kwargs,
-              )
-            except resolver_lib.ResolverParsingError as e:
-              cause = e.__cause__
-              error_type = (
-                  type(cause).__name__
-                  if cause is not None
-                  else type(e).__name__
-              )
-              dispatcher.emit(
-                  events.ParseFailed(
-                      document_id=document_id,
-                      chunk_index=chunk_index,
-                      char_start=char_start,
-                      char_end=char_end,
-                      pass_index=pass_index,
-                      batch_index=batch_index,
-                      error_type=error_type,
-                      message=str(e),
-                  )
-              )
-              dispatcher.emit(
-                  events.ChunkFinished(
-                      document_id=document_id,
-                      chunk_index=chunk_index,
-                      char_start=char_start,
-                      char_end=char_end,
-                      pass_index=pass_index,
-                      batch_index=batch_index,
-                      duration_s=time.perf_counter() - batch_start,
-                      num_extractions=0,
-                      outcome="parse_error",
-                      usage=usage,
-                  )
-              )
-              if suppress_parse_errors:
-                logging.warning(
-                    "Chunk omitted from results (parse error): %s. Set"
-                    " resolver_params={'suppress_parse_errors': False} to"
-                    " raise instead.",
-                    e,
-                )
-                continue
-              raise
-          else:
-            resolved_extractions = resolver.resolve(
-                scored_outputs[0].output,
-                debug=debug,
-                suppress_parse_errors=suppress_parse_errors,
-                **kwargs,
-            )
+          usage = scored_outputs[0].usage
+          resolved_extractions = _resolve_chunk_extractions(
+              resolver,
+              scored_outputs[0].output,
+              dispatcher=dispatcher,
+              meta=meta,
+              pass_index=pass_index,
+              batch_index=batch_index,
+              batch_start=batch_start,
+              usage=usage,
+              debug=debug,
+              suppress_parse_errors=suppress_parse_errors,
+              **kwargs,
+          )
+          if resolved_extractions is None:
+            continue
 
           token_offset = (
               text_chunk.token_interval.start_index
@@ -516,31 +586,31 @@ class Annotator:
               else 0
           )
 
-          aligned_extractions = resolver.align(
-              resolved_extractions,
-              text_chunk.chunk_text,
-              token_offset,
-              char_offset,
-              tokenizer_inst=tokenizer,
-              **kwargs,
+          aligned_extractions = list(
+              resolver.align(
+                  resolved_extractions,
+                  text_chunk.chunk_text,
+                  token_offset,
+                  char_offset,
+                  tokenizer_inst=tokenizer,
+                  **kwargs,
+              )
           )
 
-          num_extractions = 0
           for extraction in aligned_extractions:
             per_doc[text_chunk.document_id].append(extraction)
-            num_extractions += 1
 
           dispatcher.emit(
               events.ChunkFinished(
-                  document_id=document_id,
-                  chunk_index=chunk_index,
-                  char_start=char_start,
-                  char_end=char_end,
+                  document_id=meta.document_id,
+                  chunk_index=meta.chunk_index,
+                  char_start=meta.char_start,
+                  char_end=meta.char_end,
                   pass_index=pass_index,
                   batch_index=batch_index,
                   duration_s=time.perf_counter() - batch_start,
-                  num_extractions=num_extractions,
-                  outcome="ok",
+                  num_extractions=len(aligned_extractions),
+                  outcome=events.OUTCOME_OK,
                   usage=usage,
               )
           )
@@ -581,7 +651,7 @@ class Annotator:
     )
 
     if dispatcher is None:
-      dispatcher = events.make_dispatcher(None)
+      dispatcher = events.Dispatcher(None)
 
     document_list = list(documents)
 
@@ -592,9 +662,11 @@ class Annotator:
     for _doc in document_list:
       document_texts[_doc.document_id] = _doc.text or ""
 
-    for pass_num in range(extraction_passes):
+    for pass_index in range(extraction_passes):
       logging.info(
-          "Starting extraction pass %d of %d", pass_num + 1, extraction_passes
+          "Starting extraction pass %d of %d",
+          pass_index + 1,
+          extraction_passes,
       )
 
       for annotated_doc in self._annotate_documents_single_pass(
@@ -602,12 +674,12 @@ class Annotator:
           resolver,
           max_char_buffer,
           batch_length,
-          debug=(debug and pass_num == 0),
-          show_progress=show_progress if pass_num == 0 else False,
+          debug=(debug and pass_index == 0),
+          show_progress=show_progress if pass_index == 0 else False,
           context_window_chars=context_window_chars,
           tokenizer=tokenizer,
           dispatcher=dispatcher,
-          pass_index=pass_num,
+          pass_index=pass_index,
           **kwargs,
       ):
         doc_id = annotated_doc.document_id

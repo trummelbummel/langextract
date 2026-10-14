@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""RED/GREEN tests for per-chunk extraction observability events."""
+"""Tests for per-chunk extraction observability events."""
 
 from __future__ import annotations
 
@@ -20,8 +20,10 @@ import concurrent.futures
 import logging
 import textwrap
 import threading
+from typing import NamedTuple
 
 from absl.testing import absltest
+from absl.testing import parameterized
 
 from langextract import annotation
 from langextract import chunking
@@ -57,10 +59,19 @@ _VALID_YAML = textwrap.dedent(f"""\
     ```""")
 
 
-def _expected_chunk_tuples(
+class _ExpectedChunk(NamedTuple):
+  """Oracle chunk identity from ChunkIterator."""
+
+  document_id: str
+  chunk_index: int
+  char_start: int | None
+  char_end: int | None
+
+
+def _expected_chunks(
     documents: list[data.Document],
-) -> list[tuple[str, int, int | None, int | None]]:
-  """Oracle: (document_id, chunk_index, char_start, char_end) via ChunkIterator."""
+) -> list[_ExpectedChunk]:
+  """Oracle chunk identity fields via ChunkIterator."""
   tok = tokenizer.RegexTokenizer()
   expected = []
   for doc in documents:
@@ -68,12 +79,14 @@ def _expected_chunk_tuples(
         chunking.ChunkIterator(doc.text, _MAX_CHAR_BUFFER, tok, document=doc)
     ):
       interval = chunk.char_interval
-      expected.append((
-          doc.document_id,
-          index,
-          interval.start_pos,
-          interval.end_pos,
-      ))
+      expected.append(
+          _ExpectedChunk(
+              document_id=doc.document_id,
+              chunk_index=index,
+              char_start=interval.start_pos,
+              char_end=interval.end_pos,
+          )
+      )
   return expected
 
 
@@ -160,12 +173,12 @@ def _two_docs() -> list[data.Document]:
   ]
 
 
-class ChunkEventsTest(absltest.TestCase):
+class ChunkEventsTest(parameterized.TestCase):
   """Acceptance criteria for on_event chunk observability."""
 
   def test_one_started_and_finished_per_chunk(self):
     docs = _two_docs()
-    expected = _expected_chunk_tuples(docs)
+    expected = _expected_chunks(docs)
     self.assertGreaterEqual(len(expected), 4)
     observer = _RecordingObserver()
     annotator = _make_annotator(_ValidFakeModel())
@@ -179,16 +192,24 @@ class ChunkEventsTest(absltest.TestCase):
             on_event=observer,
         )
     )
-    started = [e for e in observer.events if e.name == "chunk_started"]
-    finished = [e for e in observer.events if e.name == "chunk_finished"]
+    started = [
+        event for event in observer.events if event.name == "chunk_started"
+    ]
+    finished = [
+        event for event in observer.events if event.name == "chunk_finished"
+    ]
     self.assertLen(started, len(expected))
     self.assertLen(finished, len(expected))
-    self.assertTrue(all(isinstance(e, events.ChunkStarted) for e in started))
-    self.assertTrue(all(isinstance(e, events.ChunkFinished) for e in finished))
+    self.assertTrue(
+        all(isinstance(event, events.ChunkStarted) for event in started)
+    )
+    self.assertTrue(
+        all(isinstance(event, events.ChunkFinished) for event in finished)
+    )
 
   def test_chunk_indices_and_ranges_match_chunk_iterator(self):
     docs = _two_docs()
-    expected = _expected_chunk_tuples(docs)
+    expected = _expected_chunks(docs)
     observer = _RecordingObserver()
     annotator = _make_annotator(_ValidFakeModel())
     list(
@@ -201,34 +222,43 @@ class ChunkEventsTest(absltest.TestCase):
             on_event=observer,
         )
     )
-    started = [e for e in observer.events if e.name == "chunk_started"]
+    started = [
+        event for event in observer.events if event.name == "chunk_started"
+    ]
     got = [
-        (e.document_id, e.chunk_index, e.char_start, e.char_end)
-        for e in started
+        _ExpectedChunk(
+            document_id=event.document_id,
+            chunk_index=event.chunk_index,
+            char_start=event.char_start,
+            char_end=event.char_end,
+        )
+        for event in started
     ]
     self.assertEqual(got, expected)
     # Counterexample: must restart per document, not run-global 0..N-1.
     self.assertEqual(
-        [e.chunk_index for e in started],
-        [t[1] for t in expected],
+        [event.chunk_index for event in started],
+        [chunk.chunk_index for chunk in expected],
     )
     self.assertNotEqual(
-        [e.chunk_index for e in started],
+        [event.chunk_index for event in started],
         list(range(len(started))),
         msg="chunk_index must be per-document, not run-global",
     )
-    finished = [e for e in observer.events if e.name == "chunk_finished"]
-    for s, f in zip(started, finished):
-      self.assertEqual(s.document_id, f.document_id)
-      self.assertEqual(s.chunk_index, f.chunk_index)
-      self.assertEqual(s.char_start, f.char_start)
-      self.assertEqual(s.char_end, f.char_end)
-      self.assertEqual(s.pass_index, f.pass_index)
-      self.assertEqual(s.batch_index, f.batch_index)
+    finished = [
+        event for event in observer.events if event.name == "chunk_finished"
+    ]
+    for started_event, finished_event in zip(started, finished):
+      self.assertEqual(started_event.document_id, finished_event.document_id)
+      self.assertEqual(started_event.chunk_index, finished_event.chunk_index)
+      self.assertEqual(started_event.char_start, finished_event.char_start)
+      self.assertEqual(started_event.char_end, finished_event.char_end)
+      self.assertEqual(started_event.pass_index, finished_event.pass_index)
+      self.assertEqual(started_event.batch_index, finished_event.batch_index)
 
   def test_batch_index_groups_chunks(self):
     docs = _two_docs()
-    expected = _expected_chunk_tuples(docs)
+    expected = _expected_chunks(docs)
     self.assertEqual(len(expected), 4)
     observer = _RecordingObserver()
     annotator = _make_annotator(_ValidFakeModel())
@@ -242,8 +272,10 @@ class ChunkEventsTest(absltest.TestCase):
             on_event=observer,
         )
     )
-    started = [e for e in observer.events if e.name == "chunk_started"]
-    self.assertEqual([e.batch_index for e in started], [0, 0, 0, 1])
+    started = [
+        event for event in observer.events if event.name == "chunk_started"
+    ]
+    self.assertEqual([event.batch_index for event in started], [0, 0, 0, 1])
 
   def test_pass_index_for_single_and_multi_pass(self):
     docs = [
@@ -262,9 +294,11 @@ class ChunkEventsTest(absltest.TestCase):
             on_event=observer_one,
         )
     )
-    started_one = [e for e in observer_one.events if e.name == "chunk_started"]
-    self.assertTrue(started_one)
-    self.assertEqual({e.pass_index for e in started_one}, {0})
+    started_one = [
+        event for event in observer_one.events if event.name == "chunk_started"
+    ]
+    self.assertNotEmpty(started_one)
+    self.assertEqual({event.pass_index for event in started_one}, {0})
 
     observer_two = _RecordingObserver()
     list(
@@ -280,13 +314,15 @@ class ChunkEventsTest(absltest.TestCase):
             on_event=observer_two,
         )
     )
-    started_two = [e for e in observer_two.events if e.name == "chunk_started"]
+    started_two = [
+        event for event in observer_two.events if event.name == "chunk_started"
+    ]
     finished_two = [
-        e for e in observer_two.events if e.name == "chunk_finished"
+        event for event in observer_two.events if event.name == "chunk_finished"
     ]
     self.assertEqual(len(started_two), 2 * len(started_one))
     self.assertEqual(len(finished_two), len(started_two))
-    self.assertEqual({e.pass_index for e in started_two}, {0, 1})
+    self.assertEqual({event.pass_index for event in started_two}, {0, 1})
 
   def test_finished_duration_outcome_and_counts(self):
     docs = [
@@ -304,17 +340,19 @@ class ChunkEventsTest(absltest.TestCase):
             on_event=observer,
         )
     )
-    finished = [e for e in observer.events if e.name == "chunk_finished"]
-    self.assertTrue(finished)
+    finished = [
+        event for event in observer.events if event.name == "chunk_finished"
+    ]
+    self.assertNotEmpty(finished)
     for event in finished:
       self.assertIsInstance(event.duration_s, float)
       self.assertGreaterEqual(event.duration_s, 0.0)
-      self.assertEqual(event.outcome, "ok")
+      self.assertEqual(event.outcome, events.OUTCOME_OK)
       self.assertIsInstance(event.num_extractions, int)
       self.assertGreaterEqual(event.num_extractions, 0)
     # Sum of per-chunk counts equals total aligned extractions on the doc.
     self.assertEqual(
-        sum(e.num_extractions for e in finished),
+        sum(event.num_extractions for event in finished),
         len(results[0].extractions),
     )
 
@@ -356,13 +394,20 @@ class ChunkEventsTest(absltest.TestCase):
           )
       )
     self.assertEqual(
-        [(d.document_id, d.text, d.extractions) for d in broken],
-        [(d.document_id, d.text, d.extractions) for d in baseline],
+        [
+            (document.document_id, document.text, document.extractions)
+            for document in broken
+        ],
+        [
+            (document.document_id, document.text, document.extractions)
+            for document in baseline
+        ],
     )
     observer_warnings = [
-        r
-        for r in log_ctx.records
-        if "on_event" in r.getMessage() or "observer" in r.getMessage().lower()
+        record
+        for record in log_ctx.records
+        if "on_event" in record.getMessage()
+        or "observer" in record.getMessage().lower()
     ]
     self.assertLen(observer_warnings, 1)
 
@@ -382,7 +427,7 @@ class ChunkEventsTest(absltest.TestCase):
             on_event=observer,
         )
     )
-    self.assertTrue(observer.events)
+    self.assertNotEmpty(observer.events)
     self.assertTrue(
         all(tid == caller_ident for tid in observer.thread_ids),
         msg=f"expected caller {caller_ident}, got {set(observer.thread_ids)}",
@@ -409,7 +454,9 @@ class ChunkEventsTest(absltest.TestCase):
     for kwargs in model.infer_kwargs:
       self.assertNotIn("on_event", kwargs)
     # Events must still be delivered (fails at RED until emission is wired).
-    self.assertTrue(any(e.name == "chunk_started" for e in observer.events))
+    self.assertTrue(
+        any(event.name == "chunk_started" for event in observer.events)
+    )
 
   def test_without_on_event_matches_omitted_parameter(self):
     docs = [
@@ -438,8 +485,14 @@ class ChunkEventsTest(absltest.TestCase):
         )
     )
     self.assertEqual(
-        [(d.document_id, d.text, d.extractions) for d in with_none],
-        [(d.document_id, d.text, d.extractions) for d in omitted],
+        [
+            (document.document_id, document.text, document.extractions)
+            for document in with_none
+        ],
+        [
+            (document.document_id, document.text, document.extractions)
+            for document in omitted
+        ],
     )
 
   def test_extract_str_and_documents_deliver_events(self):
@@ -468,7 +521,9 @@ class ChunkEventsTest(absltest.TestCase):
         fence_output=True,
         on_event=observer_str,
     )
-    self.assertTrue(any(e.name == "chunk_started" for e in observer_str.events))
+    self.assertTrue(
+        any(event.name == "chunk_started" for event in observer_str.events)
+    )
 
     observer_docs = _RecordingObserver()
     lx.extract(
@@ -485,14 +540,14 @@ class ChunkEventsTest(absltest.TestCase):
         on_event=observer_docs,
     )
     self.assertTrue(
-        any(e.name == "chunk_started" for e in observer_docs.events)
+        any(event.name == "chunk_started" for event in observer_docs.events)
     )
 
   def test_parse_failed_when_suppressed(self):
     docs = [
         data.Document(text=_DOC_BROKEN_TEXT, document_id="doc-broken"),
     ]
-    expected = _expected_chunk_tuples(docs)
+    expected = _expected_chunks(docs)
     self.assertLen(expected, 2)
     observer = _RecordingObserver()
     annotator = _make_annotator(_BrokenChunkFakeModel())
@@ -507,39 +562,50 @@ class ChunkEventsTest(absltest.TestCase):
             on_event=observer,
         )
     )
-    parse_failed = [e for e in observer.events if e.name == "parse_failed"]
+    parse_failed = [
+        event for event in observer.events if event.name == "parse_failed"
+    ]
     self.assertLen(parse_failed, 1)
     failed = parse_failed[0]
     self.assertIsInstance(failed, events.ParseFailed)
-    self.assertTrue(failed.error_type)
-    self.assertTrue(failed.message)
+    self.assertNotEmpty(failed.error_type)
+    self.assertNotEmpty(failed.message)
 
     # Find which chunk had the marker via oracle ranges.
-    broken_tuple = None
-    for tup in expected:
-      start, end = tup[2], tup[3]
-      if start is not None and end is not None:
-        if _BROKEN_MARKER in _DOC_BROKEN_TEXT[start:end]:
-          broken_tuple = tup
+    broken_chunk = None
+    for chunk in expected:
+      if chunk.char_start is not None and chunk.char_end is not None:
+        if (
+            _BROKEN_MARKER
+            in _DOC_BROKEN_TEXT[chunk.char_start : chunk.char_end]
+        ):
+          broken_chunk = chunk
           break
-    self.assertIsNotNone(broken_tuple)
-    self.assertEqual(failed.document_id, broken_tuple[0])
-    self.assertEqual(failed.chunk_index, broken_tuple[1])
-    self.assertEqual(failed.char_start, broken_tuple[2])
-    self.assertEqual(failed.char_end, broken_tuple[3])
+    self.assertIsNotNone(broken_chunk)
+    self.assertEqual(failed.document_id, broken_chunk.document_id)
+    self.assertEqual(failed.chunk_index, broken_chunk.chunk_index)
+    self.assertEqual(failed.char_start, broken_chunk.char_start)
+    self.assertEqual(failed.char_end, broken_chunk.char_end)
 
-    finished = [e for e in observer.events if e.name == "chunk_finished"]
+    finished = [
+        event for event in observer.events if event.name == "chunk_finished"
+    ]
     self.assertLen(finished, 2)
     broken_finished = [
-        e
-        for e in finished
-        if e.chunk_index == broken_tuple[1] and e.document_id == broken_tuple[0]
+        event
+        for event in finished
+        if event.chunk_index == broken_chunk.chunk_index
+        and event.document_id == broken_chunk.document_id
     ]
     self.assertLen(broken_finished, 1)
-    self.assertEqual(broken_finished[0].outcome, "parse_error")
+    self.assertEqual(broken_finished[0].outcome, events.OUTCOME_PARSE_ERROR)
     self.assertEqual(broken_finished[0].num_extractions, 0)
-    ok_finished = [e for e in finished if e is not broken_finished[0]]
-    self.assertTrue(all(e.outcome == "ok" for e in ok_finished))
+    ok_finished = [
+        event for event in finished if event is not broken_finished[0]
+    ]
+    self.assertTrue(
+        all(event.outcome == events.OUTCOME_OK for event in ok_finished)
+    )
     self.assertEqual(results[0].extractions, [])
 
   def test_parse_failed_then_raises_when_unsuppressed(self):
@@ -560,7 +626,7 @@ class ChunkEventsTest(absltest.TestCase):
               on_event=observer,
           )
       )
-    names = [e.name for e in observer.events]
+    names = [event.name for event in observer.events]
     self.assertIn("parse_failed", names)
     self.assertIn("chunk_finished", names)
     # Ordering for the broken chunk: started → parse_failed → finished.
@@ -568,7 +634,7 @@ class ChunkEventsTest(absltest.TestCase):
     self.assertEqual(names[pf_idx - 1], "chunk_started")
     self.assertEqual(names[pf_idx + 1], "chunk_finished")
     finished = observer.events[pf_idx + 1]
-    self.assertEqual(finished.outcome, "parse_error")
+    self.assertEqual(finished.outcome, events.OUTCOME_PARSE_ERROR)
 
   def test_parse_failed_ordering_when_suppressed(self):
     docs = [
@@ -587,7 +653,7 @@ class ChunkEventsTest(absltest.TestCase):
             on_event=observer,
         )
     )
-    names = [e.name for e in observer.events]
+    names = [event.name for event in observer.events]
     pf_idx = names.index("parse_failed")
     self.assertEqual(names[pf_idx - 1], "chunk_started")
     self.assertEqual(names[pf_idx + 1], "chunk_finished")
@@ -611,8 +677,8 @@ class ChunkEventsTest(absltest.TestCase):
     self.assertEqual(results[0].extractions, [])
     self.assertTrue(
         any(
-            "Chunk omitted from results" in r.getMessage()
-            for r in log_ctx.records
+            "Chunk omitted from results" in record.getMessage()
+            for record in log_ctx.records
         )
     )
     with self.assertRaises(resolver_lib.ResolverParsingError):
@@ -657,10 +723,18 @@ class ChunkEventsTest(absltest.TestCase):
         fence_output=True,
         on_event=observer,
     )
-    self.assertTrue(any(e.name == "parse_failed" for e in observer.events))
+    self.assertTrue(
+        any(event.name == "parse_failed" for event in observer.events)
+    )
 
-  def test_chunk_finished_carries_usage_from_scored_output(self):
-    usage = types.TokenUsage(input_tokens=3, output_tokens=5)
+  @parameterized.named_parameters(
+      (
+          "carries_usage_from_scored_output",
+          types.TokenUsage(input_tokens=3, output_tokens=5),
+      ),
+      ("usage_none_without_provider_usage", None),
+  )
+  def test_chunk_finished_usage(self, usage: types.TokenUsage | None):
     docs = [
         data.Document(text=_DOC_A_TEXT, document_id="doc-a"),
     ]
@@ -676,29 +750,13 @@ class ChunkEventsTest(absltest.TestCase):
             on_event=observer,
         )
     )
-    finished = [e for e in observer.events if e.name == "chunk_finished"]
-    self.assertTrue(finished)
-    self.assertTrue(all(e.usage == usage for e in finished))
-
-  def test_chunk_finished_usage_none_without_provider_usage(self):
-    docs = [
-        data.Document(text=_DOC_A_TEXT, document_id="doc-a"),
+    finished = [
+        event for event in observer.events if event.name == "chunk_finished"
     ]
-    observer = _RecordingObserver()
-    annotator = _make_annotator(_UsageFakeModel(usage=None))
-    list(
-        annotator.annotate_documents(
-            docs,
-            max_char_buffer=_MAX_CHAR_BUFFER,
-            batch_length=1,
-            show_progress=False,
-            debug=False,
-            on_event=observer,
-        )
+    self.assertNotEmpty(finished)
+    self.assertEqual(
+        [event.usage for event in finished], [usage] * len(finished)
     )
-    finished = [e for e in observer.events if e.name == "chunk_finished"]
-    self.assertTrue(finished)
-    self.assertTrue(all(e.usage is None for e in finished))
 
 
 class TokenUsageConstructionTest(absltest.TestCase):
