@@ -29,6 +29,7 @@ __all__ = [
     "ParseFailed",
     "ExtractionEvent",
     "EventCallback",
+    "Dispatcher",
     "make_dispatcher",
 ]
 
@@ -82,12 +83,17 @@ ExtractionEvent = ChunkStarted | ChunkFinished | ParseFailed
 EventCallback = Callable[[ExtractionEvent], None]
 
 
-class _Dispatcher:
+class Dispatcher:
   """Calls on_event safely; logs the first observer failure only."""
 
   def __init__(self, on_event: EventCallback | None):
     self._on_event = on_event
     self._logged_failure = False
+
+  @property
+  def active(self) -> bool:
+    """True when an observer callback is configured."""
+    return self._on_event is not None
 
   def emit(self, event: ExtractionEvent) -> None:
     if self._on_event is None:
@@ -104,6 +110,6 @@ class _Dispatcher:
         self._logged_failure = True
 
 
-def make_dispatcher(on_event: EventCallback | None) -> _Dispatcher:
+def make_dispatcher(on_event: EventCallback | None) -> Dispatcher:
   """Returns a per-run dispatcher for the given observer."""
-  return _Dispatcher(on_event)
+  return Dispatcher(on_event)

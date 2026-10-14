@@ -262,8 +262,7 @@ class Annotator:
     if resolver is None:
       resolver = resolver_lib.Resolver(format_type=data.FormatType.YAML)
 
-    # RED stub: accept on_event and build a dispatcher; emission is Task 1 GREEN.
-    _ = events.make_dispatcher(on_event)
+    dispatcher = events.make_dispatcher(on_event)
 
     if extraction_passes == 1:
       yield from self._annotate_documents_single_pass(
@@ -275,6 +274,8 @@ class Annotator:
           show_progress,
           context_window_chars=context_window_chars,
           tokenizer=tokenizer,
+          dispatcher=dispatcher,
+          pass_index=0,
           **kwargs,
       )
     else:
@@ -288,6 +289,7 @@ class Annotator:
           show_progress,
           context_window_chars=context_window_chars,
           tokenizer=tokenizer,
+          dispatcher=dispatcher,
           **kwargs,
       )
 
@@ -302,6 +304,8 @@ class Annotator:
       context_window_chars: int | None = None,
       tokenizer: tokenizer_lib.Tokenizer | None = None,
       suppress_parse_errors: bool = False,
+      dispatcher: events.Dispatcher | None = None,
+      pass_index: int = 0,
       **kwargs,
   ) -> Iterator[data.AnnotatedDocument]:
     """Single-pass annotation with stable ordering and streaming emission.
@@ -313,12 +317,16 @@ class Annotator:
     When context_window_chars is set, includes text from the previous chunk as
     context for coreference resolution across chunk boundaries.
     """
+    if dispatcher is None:
+      dispatcher = events.make_dispatcher(None)
+
     doc_order: list[str] = []
     doc_text_by_id: dict[str, str] = {}
     per_doc: DefaultDict[str, list[data.Extraction]] = collections.defaultdict(
         list
     )
     next_emit_idx = 0
+    chunk_index_by_doc: dict[str, int] = collections.defaultdict(int)
 
     def _capture_docs(src: Iterable[data.Document]) -> Iterator[data.Document]:
       """Captures document order and text lazily as chunks are produced."""
@@ -372,7 +380,7 @@ class Annotator:
     )
 
     try:
-      for batch in batch_iter:
+      for batch_index, batch in enumerate(batch_iter):
         if not batch:
           continue
 
@@ -398,13 +406,38 @@ class Annotator:
           except AttributeError:
             pass
 
+        chunk_meta: list[tuple[str, int, int | None, int | None]] = []
+        for chunk in batch:
+          document_id = chunk.document_id or ""
+          chunk_index = chunk_index_by_doc[document_id]
+          chunk_index_by_doc[document_id] = chunk_index + 1
+          char_start = (
+              chunk.char_interval.start_pos if chunk.char_interval else None
+          )
+          char_end = (
+              chunk.char_interval.end_pos if chunk.char_interval else None
+          )
+          chunk_meta.append((document_id, chunk_index, char_start, char_end))
+          dispatcher.emit(
+              events.ChunkStarted(
+                  document_id=document_id,
+                  chunk_index=chunk_index,
+                  char_start=char_start,
+                  char_end=char_end,
+                  pass_index=pass_index,
+                  batch_index=batch_index,
+              )
+          )
+
+        batch_start = time.perf_counter()
         outputs = self._language_model.infer(batch_prompts=prompts, **kwargs)
         if not isinstance(outputs, list):
           outputs = list(outputs)
         # Avoid retaining these prompts while constructing the next batch.
         del prompts
 
-        for text_chunk, scored_outputs in zip(batch, outputs):
+        for text_chunk, scored_outputs, meta in zip(batch, outputs, chunk_meta):
+          document_id, chunk_index, char_start, char_end = meta
           if not isinstance(scored_outputs, list):
             scored_outputs = list(scored_outputs)
           if not scored_outputs:
@@ -439,8 +472,25 @@ class Annotator:
               **kwargs,
           )
 
+          num_extractions = 0
           for extraction in aligned_extractions:
             per_doc[text_chunk.document_id].append(extraction)
+            num_extractions += 1
+
+          dispatcher.emit(
+              events.ChunkFinished(
+                  document_id=document_id,
+                  chunk_index=chunk_index,
+                  char_start=char_start,
+                  char_end=char_end,
+                  pass_index=pass_index,
+                  batch_index=batch_index,
+                  duration_s=time.perf_counter() - batch_start,
+                  num_extractions=num_extractions,
+                  outcome="ok",
+                  usage=getattr(scored_outputs[0], "usage", None),
+              )
+          )
 
           if show_progress and text_chunk.char_interval is not None:
             chars_processed += (
@@ -466,6 +516,7 @@ class Annotator:
       show_progress: bool = True,
       context_window_chars: int | None = None,
       tokenizer: tokenizer_lib.Tokenizer | None = None,
+      dispatcher: events.Dispatcher | None = None,
       **kwargs,
   ) -> Iterator[data.AnnotatedDocument]:
     """Sequential extraction passes logic for improved recall."""
@@ -475,6 +526,9 @@ class Annotator:
         " passes.",
         extraction_passes,
     )
+
+    if dispatcher is None:
+      dispatcher = events.make_dispatcher(None)
 
     document_list = list(documents)
 
@@ -499,6 +553,8 @@ class Annotator:
           show_progress=show_progress if pass_num == 0 else False,
           context_window_chars=context_window_chars,
           tokenizer=tokenizer,
+          dispatcher=dispatcher,
+          pass_index=pass_num,
           **kwargs,
       ):
         doc_id = annotated_doc.document_id
