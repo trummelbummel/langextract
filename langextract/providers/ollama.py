@@ -307,13 +307,44 @@ class OllamaLanguageModel(base_model.BaseLanguageModel):
               **combined_kwargs,
           )
           output = self._extract_response_text(response)
-        yield [core_types.ScoredOutput(score=1.0, output=output)]
+        yield [
+            core_types.ScoredOutput(
+                score=1.0,
+                output=output,
+                usage=self._usage_from_response(response),
+            )
+        ]
       except exceptions.InferenceError:
         raise
       except Exception as e:
         raise exceptions.InferenceRuntimeError(
             f'Ollama API error: {str(e)}', original=e, provider='Ollama'
         ) from e
+
+  @staticmethod
+  def _usage_from_response(
+      response: Mapping[str, Any],
+  ) -> core_types.TokenUsage:
+    """Maps Ollama response token/latency fields to TokenUsage."""
+
+    def _optional_int(key: str) -> int | None:
+      value = response.get(key)
+      if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+      return int(value)
+
+    def _optional_latency_s() -> float | None:
+      value = response.get('total_duration')
+      if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+      return float(value) / 1e9
+
+    return core_types.TokenUsage(
+        input_tokens=_optional_int('prompt_eval_count'),
+        output_tokens=_optional_int('eval_count'),
+        reasoning_tokens=None,
+        provider_latency_s=_optional_latency_s(),
+    )
 
   @staticmethod
   def _extract_response_text(response: Mapping[str, Any]) -> str:
