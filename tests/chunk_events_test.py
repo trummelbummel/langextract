@@ -340,7 +340,7 @@ class ChunkEventsTest(parameterized.TestCase):
 
   def test_raising_observer_does_not_change_result(self):
     docs = _two_docs()
-    model = _ValidFakeModel()
+    model = _ValidFakeModel(output=_VALID_YAML)
     annotator = _make_annotator(model)
     baseline = list(
         annotator.annotate_documents(
@@ -355,6 +355,10 @@ class ChunkEventsTest(parameterized.TestCase):
             on_event=None,
         )
     )
+    self.assertTrue(
+        any(document.extractions for document in baseline),
+        msg="baseline must be non-empty so equality is meaningful",
+    )
 
     def _always_raise(_event):
       raise RuntimeError("observer boom")
@@ -363,7 +367,9 @@ class ChunkEventsTest(parameterized.TestCase):
       # Force at least one logging call path; includes absl and stdlib.
       logging.getLogger().warning("probe")
       broken = list(
-          _make_annotator(_ValidFakeModel()).annotate_documents(
+          _make_annotator(
+              _ValidFakeModel(output=_VALID_YAML)
+          ).annotate_documents(
               [
                   data.Document(text=_DOC_A_TEXT, document_id="doc-a"),
                   data.Document(text=_DOC_B_TEXT, document_id="doc-b"),
@@ -444,7 +450,7 @@ class ChunkEventsTest(parameterized.TestCase):
     docs = [
         data.Document(text=_DOC_A_TEXT, document_id="doc-a"),
     ]
-    annotator = _make_annotator(_ValidFakeModel())
+    annotator = _make_annotator(_ValidFakeModel(output=_VALID_YAML))
     with_none = list(
         annotator.annotate_documents(
             docs,
@@ -454,6 +460,10 @@ class ChunkEventsTest(parameterized.TestCase):
             debug=False,
             on_event=None,
         )
+    )
+    self.assertTrue(
+        any(document.extractions for document in with_none),
+        msg="baseline must be non-empty so equality is meaningful",
     )
     omitted = list(
         annotator.annotate_documents(
