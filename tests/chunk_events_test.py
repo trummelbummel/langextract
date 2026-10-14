@@ -173,6 +173,31 @@ def _two_docs() -> list[data.Document]:
   ]
 
 
+def _run_annotate(
+    model: base_model.BaseLanguageModel,
+    docs: list[data.Document],
+    **overrides,
+) -> _RecordingObserver:
+  """Runs annotate_documents with shared defaults; returns the observer."""
+  observer = overrides.pop("observer", None) or _RecordingObserver()
+  kwargs = {
+      "max_char_buffer": _MAX_CHAR_BUFFER,
+      "batch_length": 1,
+      "show_progress": False,
+      "debug": False,
+      "on_event": observer,
+  }
+  kwargs.update(overrides)
+  list(_make_annotator(model).annotate_documents(docs, **kwargs))
+  return observer
+
+
+def _events_named(
+    observer: _RecordingObserver, name: str
+) -> list[events.ExtractionEvent]:
+  return [event for event in observer.events if event.name == name]
+
+
 class ChunkEventsTest(parameterized.TestCase):
   """Acceptance criteria for on_event chunk observability."""
 
@@ -180,24 +205,9 @@ class ChunkEventsTest(parameterized.TestCase):
     docs = _two_docs()
     expected = _expected_chunks(docs)
     self.assertGreaterEqual(len(expected), 4)
-    observer = _RecordingObserver()
-    annotator = _make_annotator(_ValidFakeModel())
-    list(
-        annotator.annotate_documents(
-            docs,
-            max_char_buffer=_MAX_CHAR_BUFFER,
-            batch_length=3,
-            show_progress=False,
-            debug=False,
-            on_event=observer,
-        )
-    )
-    started = [
-        event for event in observer.events if event.name == "chunk_started"
-    ]
-    finished = [
-        event for event in observer.events if event.name == "chunk_finished"
-    ]
+    observer = _run_annotate(_ValidFakeModel(), docs, batch_length=3)
+    started = _events_named(observer, "chunk_started")
+    finished = _events_named(observer, "chunk_finished")
     self.assertLen(started, len(expected))
     self.assertLen(finished, len(expected))
     self.assertTrue(
@@ -210,21 +220,8 @@ class ChunkEventsTest(parameterized.TestCase):
   def test_chunk_indices_and_ranges_match_chunk_iterator(self):
     docs = _two_docs()
     expected = _expected_chunks(docs)
-    observer = _RecordingObserver()
-    annotator = _make_annotator(_ValidFakeModel())
-    list(
-        annotator.annotate_documents(
-            docs,
-            max_char_buffer=_MAX_CHAR_BUFFER,
-            batch_length=3,
-            show_progress=False,
-            debug=False,
-            on_event=observer,
-        )
-    )
-    started = [
-        event for event in observer.events if event.name == "chunk_started"
-    ]
+    observer = _run_annotate(_ValidFakeModel(), docs, batch_length=3)
+    started = _events_named(observer, "chunk_started")
     got = [
         _ExpectedChunk(
             document_id=event.document_id,
@@ -245,9 +242,7 @@ class ChunkEventsTest(parameterized.TestCase):
         list(range(len(started))),
         msg="chunk_index must be per-document, not run-global",
     )
-    finished = [
-        event for event in observer.events if event.name == "chunk_finished"
-    ]
+    finished = _events_named(observer, "chunk_finished")
     for started_event, finished_event in zip(started, finished):
       self.assertEqual(started_event.document_id, finished_event.document_id)
       self.assertEqual(started_event.chunk_index, finished_event.chunk_index)
@@ -260,21 +255,8 @@ class ChunkEventsTest(parameterized.TestCase):
     docs = _two_docs()
     expected = _expected_chunks(docs)
     self.assertEqual(len(expected), 4)
-    observer = _RecordingObserver()
-    annotator = _make_annotator(_ValidFakeModel())
-    list(
-        annotator.annotate_documents(
-            docs,
-            max_char_buffer=_MAX_CHAR_BUFFER,
-            batch_length=3,
-            show_progress=False,
-            debug=False,
-            on_event=observer,
-        )
-    )
-    started = [
-        event for event in observer.events if event.name == "chunk_started"
-    ]
+    observer = _run_annotate(_ValidFakeModel(), docs, batch_length=3)
+    started = _events_named(observer, "chunk_started")
     self.assertEqual([event.batch_index for event in started], [0, 0, 0, 1])
 
   def test_pass_index_for_single_and_multi_pass(self):
