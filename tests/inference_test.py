@@ -161,55 +161,59 @@ class TestOllamaLanguageModel(parameterized.TestCase):
     ]]
     self.assertEqual(results, expected_results)
 
-  @mock.patch("langextract.providers.ollama.OllamaLanguageModel._ollama_query")
-  def test_ollama_infer_fills_token_usage(self, mock_ollama_query):
-    """Ollama generate path maps prompt_eval_count/eval_count/total_duration."""
-    gemma_response = {
-        "model": "gemma2:latest",
-        "created_at": "2025-01-23T22:37:08.579440841Z",
-        "response": "{'bus' : '**autóbusz**'} \n\n\n  \n",
-        "done": True,
-        "done_reason": "stop",
-        "context": [106, 1645, 108],
-        "total_duration": 24038204381,
-        "load_duration": 21551375738,
-        "prompt_eval_count": 15,
-        "prompt_eval_duration": 633000000,
-        "eval_count": 17,
-        "eval_duration": 1848000000,
-    }
-    mock_ollama_query.return_value = gemma_response
-    model = ollama.OllamaLanguageModel(
-        model_id="gemma2:latest",
-        model_url="http://localhost:11434",
-        structured_output_format="json",
-    )
-    results = list(model.infer(["What is bus in Hungarian?"]))
-    usage = results[0][0].usage
-    self.assertIsNotNone(usage)
-    self.assertEqual(usage.input_tokens, 15)
-    self.assertEqual(usage.output_tokens, 17)
-    self.assertIsNone(usage.reasoning_tokens)
-    self.assertAlmostEqual(usage.provider_latency_s, 24.038204381)
-
-  @mock.patch(
-      "langextract.providers.ollama.OllamaLanguageModel._ollama_gpt_oss_chat_query"
+  @parameterized.named_parameters(
+      (
+          "generate",
+          "langextract.providers.ollama.OllamaLanguageModel._ollama_query",
+          {
+              "model": "gemma2:latest",
+              "created_at": "2025-01-23T22:37:08.579440841Z",
+              "response": "{'bus' : '**autóbusz**'} \n\n\n  \n",
+              "done": True,
+              "done_reason": "stop",
+              "context": [106, 1645, 108],
+              "total_duration": 24038204381,
+              "load_duration": 21551375738,
+              "prompt_eval_count": 15,
+              "prompt_eval_duration": 633000000,
+              "eval_count": 17,
+              "eval_duration": 1848000000,
+          },
+          {
+              "model_id": "gemma2:latest",
+              "model_url": "http://localhost:11434",
+              "structured_output_format": "json",
+          },
+          "What is bus in Hungarian?",
+      ),
+      (
+          "gpt_oss_chat",
+          (
+              "langextract.providers.ollama.OllamaLanguageModel"
+              "._ollama_gpt_oss_chat_query"
+          ),
+          {
+              "message": {"content": '{"extractions": []}'},
+              "done": True,
+              "prompt_eval_count": 15,
+              "eval_count": 17,
+              "total_duration": 24038204381,
+          },
+          {
+              "model_id": "gpt-oss:20b",
+              "model_url": "http://localhost:11434",
+          },
+          "Test prompt",
+      ),
   )
-  def test_ollama_gpt_oss_chat_fills_token_usage(self, mock_chat_query):
-    """GPT-OSS chat path maps the same usage keys."""
-    mock_chat_query.return_value = {
-        "message": {"content": '{"extractions": []}'},
-        "done": True,
-        "prompt_eval_count": 15,
-        "eval_count": 17,
-        "total_duration": 24038204381,
-    }
-    model = ollama.OllamaLanguageModel(
-        model_id="gpt-oss:20b",
-        model_url="http://localhost:11434",
-    )
-    results = list(model.infer(["Test prompt"]))
-    usage = results[0][0].usage
+  def test_ollama_fills_token_usage(
+      self, patch_target, response, model_kwargs, prompt
+  ):
+    """Generate and GPT-OSS chat paths map the same usage keys."""
+    with mock.patch(patch_target) as mock_query:
+      mock_query.return_value = response
+      model = ollama.OllamaLanguageModel(**model_kwargs)
+      usage = list(model.infer([prompt]))[0][0].usage
     self.assertIsNotNone(usage)
     self.assertEqual(usage.input_tokens, 15)
     self.assertEqual(usage.output_tokens, 17)
