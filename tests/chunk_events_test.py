@@ -329,7 +329,7 @@ class ChunkEventsTest(parameterized.TestCase):
     for event in finished:
       self.assertIsInstance(event.duration_s, float)
       self.assertGreaterEqual(event.duration_s, 0.0)
-      self.assertEqual(event.outcome, events.OUTCOME_OK)
+      self.assertEqual(event.outcome, "ok")
       self.assertIsInstance(event.num_extractions, int)
       self.assertGreaterEqual(event.num_extractions, 0)
     # Sum of per-chunk counts equals total aligned extractions on the doc.
@@ -560,8 +560,12 @@ class ChunkEventsTest(parameterized.TestCase):
     self.assertLen(parse_failed, 1)
     failed = parse_failed[0]
     self.assertIsInstance(failed, events.ParseFailed)
-    self.assertNotEmpty(failed.error_type)
-    self.assertNotEmpty(failed.message)
+    # Known path: broken JSON → FormatParseError cause, wrapped as
+    # ResolverParsingError; message is str of that wrapper.
+    self.assertEqual(failed.error_type, "FormatParseError")
+    self.assertEqual(
+        failed.message, "Content must contain an 'extractions' key."
+    )
 
     # Find which chunk had the marker via oracle ranges.
     broken_chunk = None
@@ -590,14 +594,12 @@ class ChunkEventsTest(parameterized.TestCase):
         and event.document_id == broken_chunk.document_id
     ]
     self.assertLen(broken_finished, 1)
-    self.assertEqual(broken_finished[0].outcome, events.OUTCOME_PARSE_ERROR)
+    self.assertEqual(broken_finished[0].outcome, "parse_error")
     self.assertEqual(broken_finished[0].num_extractions, 0)
     ok_finished = [
         event for event in finished if event is not broken_finished[0]
     ]
-    self.assertTrue(
-        all(event.outcome == events.OUTCOME_OK for event in ok_finished)
-    )
+    self.assertTrue(all(event.outcome == "ok" for event in ok_finished))
     self.assertEqual(results[0].extractions, [])
 
   def test_parse_failed_then_raises_when_unsuppressed(self):
@@ -606,7 +608,7 @@ class ChunkEventsTest(parameterized.TestCase):
     ]
     observer = _RecordingObserver()
     annotator = _make_annotator(_BrokenChunkFakeModel())
-    with self.assertRaises(resolver_lib.ResolverParsingError):
+    with self.assertRaises(resolver_lib.ResolverParsingError) as raised:
       list(
           annotator.annotate_documents(
               docs,
@@ -625,8 +627,13 @@ class ChunkEventsTest(parameterized.TestCase):
     pf_idx = names.index("parse_failed")
     self.assertEqual(names[pf_idx - 1], "chunk_started")
     self.assertEqual(names[pf_idx + 1], "chunk_finished")
+    failed = observer.events[pf_idx]
+    self.assertEqual(
+        failed.error_type, type(raised.exception.__cause__).__name__
+    )
+    self.assertEqual(failed.message, str(raised.exception))
     finished = observer.events[pf_idx + 1]
-    self.assertEqual(finished.outcome, events.OUTCOME_PARSE_ERROR)
+    self.assertEqual(finished.outcome, "parse_error")
 
   def test_parse_failed_ordering_when_suppressed(self):
     docs = [
