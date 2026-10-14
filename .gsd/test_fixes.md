@@ -189,7 +189,7 @@ Status: `[ ]` open · `[x]` done
   `test_chunk_indices_and_ranges_match_chunk_iterator`,
   `test_batch_index_groups_chunks`. Remaining call sites left for TF-007.
 
-### [ ] TF-007: Finish S13 migration + split multi-behavior tests (S13/S4) ✅
+### [ ] TF-007: Finish S13 migration + split multi-behavior tests (S13/S4) ✅ — deferred (gate 2026-10-14, no steering answer)
 
 **Smell:** S13 / S4 — Remaining duplicated setup; multi-behavior methods
 **Action:** fix

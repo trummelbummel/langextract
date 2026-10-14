@@ -57,3 +57,11 @@ coverage: "413/413 cells, 0 invalid entries"
 ## Coverage
 
 `coverage: 413/413 cells, 0 invalid entries` (hitl + design + contracts + data + readability + conventions + review + tests + errors).
+
+## Human gate (2026-10-14)
+
+- **Commit verdict:** approved
+- **R15-1** (`events.py` observer `except Exception`): **skip** (default; unanswered)
+- **R15-2** (`annotation.py` parse suppress continue): **skip** (default; unanswered)
+- **R18**: closed via TF-008 (`aa4efe1`)
+- **Deferred:** R39 (`ChunkRef`, locked-conflict), R19 / TF-007 (split multi-behavior), R65 (historical)

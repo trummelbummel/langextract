@@ -175,3 +175,10 @@ R02, R25, R29, R30, R34, R38, R39, R52, R53, R55, R60
 - gpt-oss `eval_count` probably includes Harmony reasoning tokens while `reasoning_tokens` is `None`, overstating output; not verified.
 - `annotation.py` reads `scored_outputs[0].usage` directly (style R06 removed the plan's `getattr`); duck-typed third-party outputs without `usage` would raise `AttributeError`.
 - Environment: 13 OpenAI tests in `tests/inference_test.py` fail because `openai` is not installed in `.venv`; unrelated. Uncommitted working-tree changes in `tests/chunk_events_test.py` were not reviewed.
+
+## Human gate (2026-10-14)
+
+- **Commit verdict:** approved
+- **Auto-resolved (kept):** SR-4, SR-5, SR-6, SR-10, SR-12, SR-15, SR-16
+- **Deferred (no steering answer / unanswered):** SR-1, SR-2, SR-3, SR-7, SR-8, SR-9, SR-11, SR-13, SR-14, SR-17, SR-18, SR-19
+  - reopen-decision items SR-2, SR-3, SR-7 recorded as `defer (no reason given)` per gate rules

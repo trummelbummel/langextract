@@ -447,3 +447,5 @@
 {"rule": "R23", "file": "langextract/providers/ollama.py", "status": "NA", "line": null, "note": "scope=tests; production file."}
 {"rule": "R23", "file": "tests/chunk_events_test.py", "status": "PASS", "line": null, "note": "Stays absltest (+ parameterized); no pytest conversion."}
 {"rule": "R23", "file": "tests/inference_test.py", "status": "PASS", "line": null, "note": "New tests stay in absltest.TestCase / mock.patch style of the file."}
+{"rule":"R15","file":"langextract/core/events.py","status":"REPORTED","line":101,"note":"GATE: skip (default; human approved commits without R15 verdict)"}
+{"rule":"R15","file":"langextract/annotation.py","status":"REPORTED","line":458,"note":"GATE: skip (default; human approved commits without R15 verdict)"}

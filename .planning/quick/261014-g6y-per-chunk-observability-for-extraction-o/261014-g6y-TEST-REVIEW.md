@@ -48,5 +48,5 @@ timestamp: 2026-10-14T10:55:00Z
 
 ## Backlog
 
-- Open `[ ]`: TF-007 (simple — gate).
 - Auto-resolved: TF-008 → `aa4efe1`.
+- **Deferred (human gate 2026-10-14, no steering answer):** TF-007 — finish S13 migration + split multi-behavior tests.
