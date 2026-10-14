@@ -28,6 +28,8 @@ __all__ = [
     "ParseFailed",
     "ExtractionEvent",
     "EventCallback",
+    "OUTCOME_OK",
+    "OUTCOME_PARSE_ERROR",
 ]
 
 OUTCOME_OK = "ok"
