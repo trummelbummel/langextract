@@ -162,6 +162,81 @@ class TestOllamaLanguageModel(absltest.TestCase):
     self.assertEqual(results, expected_results)
 
   @mock.patch("langextract.providers.ollama.OllamaLanguageModel._ollama_query")
+  def test_ollama_infer_fills_token_usage(self, mock_ollama_query):
+    """Ollama generate path maps prompt_eval_count/eval_count/total_duration."""
+    gemma_response = {
+        "model": "gemma2:latest",
+        "created_at": "2025-01-23T22:37:08.579440841Z",
+        "response": "{'bus' : '**autóbusz**'} \n\n\n  \n",
+        "done": True,
+        "done_reason": "stop",
+        "context": [106, 1645, 108],
+        "total_duration": 24038204381,
+        "load_duration": 21551375738,
+        "prompt_eval_count": 15,
+        "prompt_eval_duration": 633000000,
+        "eval_count": 17,
+        "eval_duration": 1848000000,
+    }
+    mock_ollama_query.return_value = gemma_response
+    model = ollama.OllamaLanguageModel(
+        model_id="gemma2:latest",
+        model_url="http://localhost:11434",
+        structured_output_format="json",
+    )
+    results = list(model.infer(["What is bus in Hungarian?"]))
+    usage = results[0][0].usage
+    self.assertIsNotNone(usage)
+    self.assertEqual(usage.input_tokens, 15)
+    self.assertEqual(usage.output_tokens, 17)
+    self.assertIsNone(usage.reasoning_tokens)
+    self.assertAlmostEqual(usage.provider_latency_s, 24.038204381)
+
+  @mock.patch(
+      "langextract.providers.ollama.OllamaLanguageModel._ollama_gpt_oss_chat_query"
+  )
+  def test_ollama_gpt_oss_chat_fills_token_usage(self, mock_chat_query):
+    """GPT-OSS chat path maps the same usage keys."""
+    mock_chat_query.return_value = {
+        "message": {"content": '{"extractions": []}'},
+        "done": True,
+        "prompt_eval_count": 15,
+        "eval_count": 17,
+        "total_duration": 24038204381,
+    }
+    model = ollama.OllamaLanguageModel(
+        model_id="gpt-oss:20b",
+        model_url="http://localhost:11434",
+    )
+    results = list(model.infer(["Test prompt"]))
+    usage = results[0][0].usage
+    self.assertIsNotNone(usage)
+    self.assertEqual(usage.input_tokens, 15)
+    self.assertEqual(usage.output_tokens, 17)
+    self.assertIsNone(usage.reasoning_tokens)
+    self.assertAlmostEqual(usage.provider_latency_s, 24.038204381)
+
+  @mock.patch("langextract.providers.ollama.OllamaLanguageModel._ollama_query")
+  def test_ollama_infer_missing_usage_keys_are_none(self, mock_ollama_query):
+    """Missing usage fields become None on TokenUsage."""
+    mock_ollama_query.return_value = {
+        "response": '{"extractions": []}',
+        "done": True,
+    }
+    model = ollama.OllamaLanguageModel(
+        model_id="gemma2:latest",
+        model_url="http://localhost:11434",
+        structured_output_format="json",
+    )
+    results = list(model.infer(["prompt"]))
+    usage = results[0][0].usage
+    self.assertIsNotNone(usage)
+    self.assertIsNone(usage.input_tokens)
+    self.assertIsNone(usage.output_tokens)
+    self.assertIsNone(usage.reasoning_tokens)
+    self.assertIsNone(usage.provider_latency_s)
+
+  @mock.patch("langextract.providers.ollama.OllamaLanguageModel._ollama_query")
   def test_ollama_infer_prefers_response_over_thinking(self, mock_ollama_query):
     """Test Ollama inference ignores reasoning when final output is present."""
     thinking_response = {

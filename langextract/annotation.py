@@ -38,6 +38,7 @@ from langextract import prompting
 from langextract import resolver as resolver_lib
 from langextract.core import base_model
 from langextract.core import data
+from langextract.core import events
 from langextract.core import exceptions
 from langextract.core import format_handler as fh
 from langextract.core import tokenizer as tokenizer_lib
@@ -217,6 +218,8 @@ class Annotator:
       context_window_chars: int | None = None,
       show_progress: bool = True,
       tokenizer: tokenizer_lib.Tokenizer | None = None,
+      *,
+      on_event: events.EventCallback | None = None,
       **kwargs,
   ) -> Iterator[data.AnnotatedDocument]:
     """Annotates a sequence of documents with NLP extractions.
@@ -244,6 +247,9 @@ class Annotator:
         resolution across chunk boundaries. Defaults to None (disabled).
       show_progress: Whether to show progress bar. Defaults to True.
       tokenizer: Optional tokenizer to use. If None, uses default tokenizer.
+      on_event: Optional callback invoked with per-chunk ExtractionEvent
+        values on the calling thread. Exceptions from the callback are
+        caught and logged once per run.
       **kwargs: Additional arguments passed to LanguageModel.infer and
         Resolver.
 
@@ -255,6 +261,9 @@ class Annotator:
     """
     if resolver is None:
       resolver = resolver_lib.Resolver(format_type=data.FormatType.YAML)
+
+    # RED stub: accept on_event and build a dispatcher; emission is Task 1 GREEN.
+    _ = events.make_dispatcher(on_event)
 
     if extraction_passes == 1:
       yield from self._annotate_documents_single_pass(
@@ -543,6 +552,8 @@ class Annotator:
       context_window_chars: int | None = None,
       show_progress: bool = True,
       tokenizer: tokenizer_lib.Tokenizer | None = None,
+      *,
+      on_event: events.EventCallback | None = None,
       **kwargs,
   ) -> data.AnnotatedDocument:
     """Annotates text with NLP extractions for text input.
@@ -564,6 +575,8 @@ class Annotator:
         (disabled).
       show_progress: Whether to show progress bar. Defaults to True.
       tokenizer: Optional tokenizer instance.
+      on_event: Optional callback invoked with per-chunk ExtractionEvent
+        values on the calling thread.
       **kwargs: Additional arguments for inference and resolver_lib.
 
     Returns:
@@ -595,6 +608,7 @@ class Annotator:
             context_window_chars=context_window_chars,
             show_progress=show_progress,
             tokenizer=tokenizer,
+            on_event=on_event,
             **kwargs,
         )
     )

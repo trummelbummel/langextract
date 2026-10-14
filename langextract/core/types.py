@@ -23,6 +23,7 @@ from typing import TypeAlias
 
 __all__ = [
     'ScoredOutput',
+    'TokenUsage',
     'FormatType',
     'ConstraintType',
     'Constraint',
@@ -67,11 +68,22 @@ class Constraint:
 
 
 @dataclasses.dataclass(frozen=True)
+class TokenUsage:
+  """Optional token and latency counts reported by a provider."""
+
+  input_tokens: int | None = None
+  output_tokens: int | None = None
+  reasoning_tokens: int | None = None
+  provider_latency_s: float | None = None
+
+
+@dataclasses.dataclass(frozen=True)
 class ScoredOutput:
   """Scored output from language model inference."""
 
   score: float | None = None
   output: str | None = None
+  usage: TokenUsage | None = dataclasses.field(default=None, compare=False)
 
   def __str__(self) -> str:
     score_str = '-' if self.score is None else f'{self.score:.2f}'

@@ -29,6 +29,7 @@ from langextract import prompting
 from langextract import resolver
 from langextract.core import base_model
 from langextract.core import data
+from langextract.core import events
 from langextract.core import exceptions
 from langextract.core import format_handler as fh
 from langextract.core import output_schema as output_schema_lib
@@ -72,6 +73,7 @@ def extract(
     prompt_validation_strict: bool = False,
     show_progress: bool = True,
     tokenizer: tokenizer_lib.Tokenizer | None = None,
+    on_event: events.EventCallback | None = None,
 ) -> list[data.AnnotatedDocument] | data.AnnotatedDocument:
   """Extracts structured information from text.
 
@@ -95,6 +97,9 @@ def extract(
         Required unless `output_schema` is provided.
       tokenizer: Optional Tokenizer instance to use for chunking and alignment.
         If None, defaults to RegexTokenizer.
+      on_event: Optional callback invoked with per-chunk ExtractionEvent values
+        on the calling thread. Exceptions from the callback are caught and
+        logged once per run.
       api_key: API key for Gemini or other LLM services (can also use
         environment variable LANGEXTRACT_API_KEY). Cost considerations: Most
         APIs charge by token volume. Smaller max_char_buffer values increase the
@@ -431,6 +436,7 @@ def extract(
         show_progress=show_progress,
         max_workers=max_workers,
         tokenizer=tokenizer,
+        on_event=on_event,
         **alignment_kwargs,
     )
     return result
@@ -455,6 +461,7 @@ def extract(
         show_progress=show_progress,
         max_workers=max_workers,
         tokenizer=tokenizer,
+        on_event=on_event,
         **alignment_kwargs,
     )
     return list(result)
