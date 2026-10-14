@@ -560,12 +560,28 @@ class ChunkEventsTest(parameterized.TestCase):
     self.assertLen(parse_failed, 1)
     failed = parse_failed[0]
     self.assertIsInstance(failed, events.ParseFailed)
-    # Known path: broken JSON → FormatParseError cause, wrapped as
-    # ResolverParsingError; message is str of that wrapper.
-    self.assertEqual(failed.error_type, "FormatParseError")
+    # Same broken output unsuppressed: message is str(ResolverParsingError),
+    # error_type is the FormatParseError (or similar) cause class name.
+    with self.assertRaises(resolver_lib.ResolverParsingError) as raised:
+      list(
+          _make_annotator(_BrokenChunkFakeModel()).annotate_documents(
+              [
+                  data.Document(
+                      text=_DOC_BROKEN_TEXT, document_id="doc-broken"
+                  ),
+              ],
+              max_char_buffer=_MAX_CHAR_BUFFER,
+              batch_length=1,
+              show_progress=False,
+              debug=False,
+              suppress_parse_errors=False,
+          )
+      )
+    self.assertIsNotNone(raised.exception.__cause__)
     self.assertEqual(
-        failed.message, "Content must contain an 'extractions' key."
+        failed.error_type, type(raised.exception.__cause__).__name__
     )
+    self.assertEqual(failed.message, str(raised.exception))
 
     # Find which chunk had the marker via oracle ranges.
     broken_chunk = None
