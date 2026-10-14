@@ -213,13 +213,14 @@ Status: `[ ]` open · `[x]` done
 
 - (deferred to post-plan gate — open questions none for simple)
 
-### [ ] TF-008: Parametrize Ollama usage path twins (S4) ✅
+### [x] TF-008: Parametrize Ollama usage path twins (S4) ✅
 
 **Smell:** S4 — Copy-paste twins
 **Action:** fix
 **Files:** `tests/inference_test.py:164`
 **Verdict:** simple — L1
 **Risk:** Low
+**Status:** auto-resolved `aa4efe1` (261014-g6y step 6)
 
 **Work**
 
@@ -232,4 +233,4 @@ Status: `[ ]` open · `[x]` done
 
 **Steering**
 
-- (deferred to gate)
+- (done)

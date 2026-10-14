@@ -17,7 +17,7 @@ timestamp: 2026-10-14T10:55:00Z
 |------|-------|---------|--------|
 | TF-006 | Extract annotate run helpers (S13) | ✅ simple | [x] |
 | TF-007 | Finish S13 migration + split multi-behavior (S13/S4) | ✅ simple | [ ] open (gate / step 6) |
-| TF-008 | Parametrize Ollama usage twins (S4) | ✅ simple | [ ] open (gate / step 6) |
+| TF-008 | Parametrize Ollama usage twins (S4) | ✅ simple | [x] auto-resolved `aa4efe1` |
 
 **Summary:** 3 simple / 0 complex out of 3 new tasks for this id.
 
@@ -48,4 +48,5 @@ timestamp: 2026-10-14T10:55:00Z
 
 ## Backlog
 
-- Open `[ ]`: TF-007, TF-008 (simple — auto-resolve in step 6 or gate).
+- Open `[ ]`: TF-007 (simple — gate).
+- Auto-resolved: TF-008 → `aa4efe1`.

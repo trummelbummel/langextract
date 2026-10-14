@@ -5,6 +5,21 @@
 - Counts: 0 blocker · 6 major · 12 minor · 1 nit
 - Routing (primary): fix 13 · test-case 4 · plan-template 0 (+3 secondary) · linter 1 · skill 1 (+1 secondary) · rule 0
 
+## Auto-resolved (step 6)
+
+| ID | Commit(s) |
+|---|---|
+| SR-6 | `7e083c7` |
+| SR-10 | `5077e5d` |
+| SR-12 | `52072ab` |
+| SR-4 | `e0cf853` |
+| SR-5 | `82256cc`, `f1e81d8` |
+| SR-15 | `ce5bf3e` |
+| SR-16 | `38fa092` |
+
+Held for gate / reopen-decision: SR-1 (duration formula), SR-2, SR-3, SR-7.
+Not auto-resolved this pass: SR-8, SR-9, SR-11, SR-13, SR-14, SR-17, SR-18, SR-19.
+
 ## Summary
 The two latency metrics do not measure what the spec uses them for.
 `ChunkFinished.duration_s` starts at one batch-wide timestamp and stops after the
