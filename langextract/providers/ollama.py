@@ -328,18 +328,24 @@ class OllamaLanguageModel(base_model.BaseLanguageModel):
   ) -> core_types.TokenUsage:
     """Maps Ollama response token/latency fields to TokenUsage."""
 
-    def _optional_number(key: str) -> float | None:
+    def _optional_count(key: str) -> int | None:
+      value = response.get(key)
+      if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return None
+      return value
+
+    def _optional_duration_ns(key: str) -> float | None:
       value = response.get(key)
       if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
       return float(value)
 
-    input_tokens = _optional_number('prompt_eval_count')
-    output_tokens = _optional_number('eval_count')
-    latency_ns = _optional_number('total_duration')
+    input_tokens = _optional_count('prompt_eval_count')
+    output_tokens = _optional_count('eval_count')
+    latency_ns = _optional_duration_ns('total_duration')
     return core_types.TokenUsage(
-        input_tokens=None if input_tokens is None else int(input_tokens),
-        output_tokens=None if output_tokens is None else int(output_tokens),
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
         reasoning_tokens=None,
         provider_latency_s=(
             None if latency_ns is None else latency_ns / _NANOSECONDS_PER_SECOND
