@@ -19,7 +19,6 @@ from __future__ import annotations
 from collections.abc import Callable
 import dataclasses
 import logging
-from typing import ClassVar
 
 from langextract.core import types
 
@@ -39,7 +38,7 @@ OUTCOME_PARSE_ERROR = "parse_error"
 class ChunkStarted:
   """Emitted when a chunk is about to be sent for inference."""
 
-  name: ClassVar[str] = "chunk_started"
+  name: str = dataclasses.field(default="chunk_started", init=False)
   document_id: str
   chunk_index: int
   char_start: int | None
@@ -52,7 +51,7 @@ class ChunkStarted:
 class ChunkFinished:
   """Emitted after a chunk has been resolved and aligned."""
 
-  name: ClassVar[str] = "chunk_finished"
+  name: str = dataclasses.field(default="chunk_finished", init=False)
   document_id: str
   chunk_index: int
   char_start: int | None
@@ -69,7 +68,7 @@ class ChunkFinished:
 class ParseFailed:
   """Emitted when resolver parsing fails for a chunk."""
 
-  name: ClassVar[str] = "parse_failed"
+  name: str = dataclasses.field(default="parse_failed", init=False)
   document_id: str
   chunk_index: int
   char_start: int | None
