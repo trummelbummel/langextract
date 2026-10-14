@@ -87,7 +87,7 @@ class TestBaseLanguageModel(absltest.TestCase):
     )
 
 
-class TestOllamaLanguageModel(absltest.TestCase):
+class TestOllamaLanguageModel(parameterized.TestCase):
 
   @mock.patch("langextract.providers.ollama.OllamaLanguageModel._ollama_query")
   def test_ollama_infer(self, mock_ollama_query):
@@ -235,6 +235,72 @@ class TestOllamaLanguageModel(absltest.TestCase):
     self.assertIsNone(usage.output_tokens)
     self.assertIsNone(usage.reasoning_tokens)
     self.assertIsNone(usage.provider_latency_s)
+
+  @parameterized.named_parameters(
+      (
+          "float_counts",
+          {"prompt_eval_count": 15.9, "eval_count": 17.5},
+          True,
+          True,
+      ),
+      (
+          "negative_counts",
+          {"prompt_eval_count": -3, "eval_count": -1},
+          True,
+          True,
+      ),
+      (
+          "bool_counts",
+          {"prompt_eval_count": True, "eval_count": False},
+          True,
+          True,
+      ),
+      (
+          "string_input",
+          {"prompt_eval_count": "15", "eval_count": 17},
+          True,
+          False,
+      ),
+      ("non_numeric_duration", {"total_duration": "x"}, False, False),
+      ("none_duration", {"total_duration": None}, False, False),
+  )
+  @mock.patch("langextract.providers.ollama.OllamaLanguageModel._ollama_query")
+  def test_ollama_usage_invalid_fields_are_none(
+      self,
+      usage_overrides,
+      expect_input_none,
+      expect_output_none,
+      mock_ollama_query,
+  ):
+    """Bool/float/negative/non-numeric usage keys map to None fields."""
+    response = {
+        "response": '{"extractions": []}',
+        "done": True,
+        "prompt_eval_count": 15,
+        "eval_count": 17,
+        "total_duration": 24038204381,
+    }
+    response.update(usage_overrides)
+    mock_ollama_query.return_value = response
+    model = ollama.OllamaLanguageModel(
+        model_id="gemma2:latest",
+        model_url="http://localhost:11434",
+        structured_output_format="json",
+    )
+    usage = list(model.infer(["prompt"]))[0][0].usage
+    self.assertIsNotNone(usage)
+    if expect_input_none:
+      self.assertIsNone(usage.input_tokens)
+    else:
+      self.assertEqual(usage.input_tokens, 15)
+    if expect_output_none:
+      self.assertIsNone(usage.output_tokens)
+    else:
+      self.assertEqual(usage.output_tokens, 17)
+    if "total_duration" in usage_overrides:
+      self.assertIsNone(usage.provider_latency_s)
+    else:
+      self.assertAlmostEqual(usage.provider_latency_s, 24.038204381)
 
   @mock.patch("langextract.providers.ollama.OllamaLanguageModel._ollama_query")
   def test_ollama_infer_prefers_response_over_thinking(self, mock_ollama_query):
