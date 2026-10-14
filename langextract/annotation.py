@@ -445,12 +445,65 @@ class Annotator:
                 "No scored outputs from language model."
             )
 
-          resolved_extractions = resolver.resolve(
-              scored_outputs[0].output,
-              debug=debug,
-              suppress_parse_errors=suppress_parse_errors,
-              **kwargs,
-          )
+          usage = getattr(scored_outputs[0], "usage", None)
+
+          if dispatcher.active:
+            try:
+              resolved_extractions = resolver.resolve(
+                  scored_outputs[0].output,
+                  debug=debug,
+                  suppress_parse_errors=False,
+                  **kwargs,
+              )
+            except resolver_lib.ResolverParsingError as e:
+              cause = e.__cause__
+              error_type = (
+                  type(cause).__name__
+                  if cause is not None
+                  else type(e).__name__
+              )
+              dispatcher.emit(
+                  events.ParseFailed(
+                      document_id=document_id,
+                      chunk_index=chunk_index,
+                      char_start=char_start,
+                      char_end=char_end,
+                      pass_index=pass_index,
+                      batch_index=batch_index,
+                      error_type=error_type,
+                      message=str(e),
+                  )
+              )
+              dispatcher.emit(
+                  events.ChunkFinished(
+                      document_id=document_id,
+                      chunk_index=chunk_index,
+                      char_start=char_start,
+                      char_end=char_end,
+                      pass_index=pass_index,
+                      batch_index=batch_index,
+                      duration_s=time.perf_counter() - batch_start,
+                      num_extractions=0,
+                      outcome="parse_error",
+                      usage=usage,
+                  )
+              )
+              if suppress_parse_errors:
+                logging.warning(
+                    "Chunk omitted from results (parse error): %s. Set"
+                    " resolver_params={'suppress_parse_errors': False} to"
+                    " raise instead.",
+                    e,
+                )
+                continue
+              raise
+          else:
+            resolved_extractions = resolver.resolve(
+                scored_outputs[0].output,
+                debug=debug,
+                suppress_parse_errors=suppress_parse_errors,
+                **kwargs,
+            )
 
           token_offset = (
               text_chunk.token_interval.start_index
@@ -488,7 +541,7 @@ class Annotator:
                   duration_s=time.perf_counter() - batch_start,
                   num_extractions=num_extractions,
                   outcome="ok",
-                  usage=getattr(scored_outputs[0], "usage", None),
+                  usage=usage,
               )
           )
 
